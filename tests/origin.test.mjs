@@ -55,3 +55,14 @@ test('paid build request is not retried after an ambiguous network failure',asyn
  const c=createOriginClient({enabled:true,baseUrl:'https://api.example',getToken:()=> 'fixture-token',fetcher:async()=>{calls++;throw Error('offline')}});
  await assert.rejects(c.startPreview('11111111-2222-4333-8444-555555555555','main'),/offline/);assert.equal(calls,1);
 });
+
+test('project and production API methods use authenticated real endpoints without POST retries', async () => {
+  const calls=[];
+  const client=createOriginClient({enabled:true,baseUrl:'https://api.example.com',getToken:()=> 'operator-token',fetcher:async(url,options)=>{calls.push({url,options});return{ok:true,json:async()=>({items:[]})}}});
+  await client.projects();await client.createProject({requestId:'request',name:'Project'});await client.projectBuilds('a/b');await client.startProjectBuild('project','request');await client.releases('project');await client.publish('project','build','release');
+  assert.equal(calls.length,6);
+  assert.equal(calls[0].url,'https://api.example.com/projects');assert.equal(calls[1].options.method,'POST');
+  assert.equal(calls[2].url,'https://api.example.com/projects/a%2Fb/previews');
+  assert.equal(calls[5].url,'https://api.example.com/projects/project/production');assert.deepEqual(JSON.parse(calls[5].options.body),{buildId:'build',requestId:'release'});
+  for(const call of calls)assert.equal(call.options.headers.Authorization,'Bearer operator-token');
+});

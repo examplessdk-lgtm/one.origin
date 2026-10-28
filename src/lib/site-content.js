@@ -30,7 +30,7 @@ The [Agent page](${site.url}/Agent) demonstrates browser and terminal conversati
 
 ## Hosting
 
-The [Hosting page](${site.url}/hosting) contains the integration for the existing AWS deployment system: GitHub source, builds, public preview URLs, deployment history, and logs. AWS operator sign-in is separate from the workspace account. Availability depends on the site's AWS callback and origin configuration. The current build worker supports the connected 1origin Nuxt project, not arbitrary repositories or this TanStack application.
+The [Hosting page](${site.url}/hosting) contains the integration for the existing AWS deployment system: GitHub source, builds, public preview URLs, deployment history, and logs. The production domain uses the existing Cognito operator account and returns to the same interface after sign-in. Operators can create persistent projects, build their connected source, inspect logs, and publish successful builds as immutable production releases. Previews expire after seven days; production releases do not. The current build worker supports the connected 1origin Nuxt project, not arbitrary repositories or this TanStack application.
 
 ## Templates and early access
 

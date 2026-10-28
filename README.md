@@ -1,3 +1,5 @@
+> Current release: [Projects and Production](docs/PROJECTS-PRODUCTION.md) connects the new UI to the existing AWS backend in two phases: persistent project creation and real production publication.
+
 # one.origin 1origin.dev
 
 ONEORIGIN: UI ใหม่จาก Base44 + ซอร์สระบบ GitHub → Build → Preview → Logs ที่พัฒนาไว้บน AWS

@@ -37,7 +37,7 @@ export default function Header() {
               <Link to="/settings" className="hover:text-foreground hover:-translate-y-0.5 transition-all">Settings</Link>
             </>
           )}
-          <Link to="/hosting" className="hover:text-foreground transition-all">Hosting</Link>
+          <Link to="/hosting" className="hover:text-foreground transition-all">Projects</Link>
           <a href="/#templates" className="hover:text-foreground hover:-translate-y-0.5 transition-all">Templates</a>
           <a href="/#pricing" className="hover:text-foreground hover:-translate-y-0.5 transition-all">Pricing</a>
           <a href="/#testimonials" className="hover:text-foreground hover:-translate-y-0.5 transition-all">Testimonials</a>
@@ -62,7 +62,7 @@ export default function Header() {
                 <Link to="/Agent" className="hover:text-primary transition-colors flex items-center justify-between">
                   Multimodal Agent <span className="text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full">New</span>
                 </Link>
-                <Link to="/hosting" className="hover:text-primary transition-colors">Hosting</Link>
+                <Link to="/hosting" className="hover:text-primary transition-colors">Projects</Link>
                 <Link to="/about" className="hover:text-primary transition-colors">About</Link>
                 {user && (
                   <>

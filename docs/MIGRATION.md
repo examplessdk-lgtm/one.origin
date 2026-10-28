@@ -1,3 +1,5 @@
+> Update 2026-10-28: the production origin is now connected to the existing AWS backend. See [Projects and Production](PROJECTS-PRODUCTION.md). Earlier migration-stage statements below about disabled operations describe the initial export, not current production behavior.
+
 # ONEORIGIN migration handoff
 
 ## Source of truth

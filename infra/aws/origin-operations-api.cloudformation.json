@@ -28,10 +28,12 @@
           "COGNITO"
         ],
         "CallbackURLs": [
-          "https://d1x9cuojzyjcbw.cloudfront.net/auth/callback"
+          "https://d1x9cuojzyjcbw.cloudfront.net/auth/callback",
+          "https://os.1origin.dev/hosting/callback"
         ],
         "LogoutURLs": [
-          "https://d1x9cuojzyjcbw.cloudfront.net/dashboard"
+          "https://d1x9cuojzyjcbw.cloudfront.net/dashboard",
+          "https://os.1origin.dev/hosting"
         ],
         "PreventUserExistenceErrors": "ENABLED",
         "EnableTokenRevocation": true,
@@ -136,7 +138,8 @@
         "ProtocolType": "HTTP",
         "CorsConfiguration": {
           "AllowOrigins": [
-            "https://d1x9cuojzyjcbw.cloudfront.net"
+            "https://d1x9cuojzyjcbw.cloudfront.net",
+            "https://os.1origin.dev"
           ],
           "AllowHeaders": [
             "content-type",
