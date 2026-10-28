@@ -36,3 +36,14 @@ CI launches the built Worker and runs the same HTTP checks locally, covering raw
 ## Follow-up requiring product decisions or account access
 
 Search rank cannot be guaranteed by a code change. Submit the sitemap and request indexing in the domain's verified Google Search Console account; verify Bing Webmaster Tools if desired. Establish consistent public ONEORIGIN branding and earn relevant editorial links. Do not add fabricated press mentions or `sameAs` identities. Decide public pricing before publishing offers. Re-run the Ora/Is Agentic audit after the deployment is live; no new readiness score is claimed here.
+
+## Release verification (2026-10-28)
+
+- Application commit: `5919b1040f3ae5c2d64889bda80ddcc8c565a47e`.
+- 34 Node tests, lint, and production build passed locally. GitHub Actions run `40696187897` succeeded, including the built Worker HTTP checks.
+- Cloudflare build `1768a4ad-d81e-4566-82af-37eb3dbd1fc7` completed successfully for that commit.
+- All 17 public HTTP checks passed on `https://os.1origin.dev` using curl transport: `python scripts/verify-agent-readiness.py https://os.1origin.dev --curl`.
+- Public raw HTML contained 2,839 text characters after scripts/styles were excluded; one H1 and sequential H2/H3 headings; canonical URL and parsable SoftwareApplication JSON-LD verified.
+- Both negotiated representations and Markdown/HTML 404s were checked for status, MIME type, Vary header, and body. All four discovery files and the linked public product pages returned expected content types and statuses. The JSON time API remained JSON even with a Markdown Accept header.
+- Browser rendering was checked after deployment; no application hydration errors appeared. The existing product design remained in place. No new Ora readiness score or search ranking has been measured.
+- This execution environment's urllib egress received HTTP 403; curl successfully verified the public responses. The verification script supports `--curl` as an optional transport; CI uses the built Worker locally.

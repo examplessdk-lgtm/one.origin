@@ -1,5 +1,9 @@
 """Verify real HTTP responses, including raw HTML; no JavaScript execution required."""
 import concurrent.futures
+import email
+import subprocess
+import tempfile
+from pathlib import Path
 import json
 import re
 import sys
@@ -27,6 +31,18 @@ class Document(HTMLParser):
         if not self.hidden: self.text.append(data)
 
 def fetch(path, accept='text/html', method='GET'):
+    if '--curl' in sys.argv:
+        # Optional curl transport for environments whose egress proxy rejects urllib.
+        with tempfile.TemporaryDirectory() as directory:
+            headers_path = Path(directory) / 'headers'
+            body_path = Path(directory) / 'body'
+            command = ['curl', '-sS', '-L', '--max-time', '30', '-D', str(headers_path), '-o', str(body_path), '-H', 'Accept: ' + accept]
+            if method == 'HEAD': command += ['--head']
+            subprocess.run(command + [origin + path], check=True, capture_output=True)
+            blocks = re.split(r'\r?\n\r?\n', headers_path.read_text())
+            final = next(block for block in reversed(blocks) if block.startswith('HTTP/'))
+            first, fields = final.split('\n', 1)
+            return int(first.split()[1]), email.message_from_string(fields), '' if method == 'HEAD' else body_path.read_text()
     req = urllib.request.Request(origin + path, headers={'Accept': accept}, method=method)
     try: response = urllib.request.urlopen(req, timeout=30)
     except urllib.error.HTTPError as error: response = error
