@@ -47,3 +47,17 @@ Legacy `/previews`, `/github/import`, `/github/file`, `/status`, `/logs`, and `/
 Run `npm run lint`, `npm test`, `PYTHONPATH=backend python -m unittest discover -s backend/tests -v`, and `npm run build`. Backend tests cover source verification, idempotency, subject isolation, branch pinning, cross-project build denial, expired artifacts, publication failures, and HTML/JS base-path rewriting. Infrastructure tests ensure inline Lambda source matches tested source, routes retain JWT authorization, and build permissions do not include production writes.
 
 CloudFormation change sets add the project table and six API routes, modify the existing Lambda and scoped IAM policy, add the production prefix to existing CloudFront read access, and append the new UI callback/logout/CORS origin. No existing resource is replaced or deleted.
+
+## Verified release — 2026-10-28 (Asia/Bangkok)
+
+- Application commit: `fc0572aa3a9ba80f3a6ecd8f3f8bb0288baf0194`.
+- GitHub Actions run `40727997079`: success. Cloudflare build `42065d52-c651-407d-b874-28ee2a1886b0`: success.
+- Local lint/build passed; 46 Node tests and 9 Python tests passed. The built Worker passed 17 local HTTP readiness checks.
+- Both AWS stacks reached UPDATE_COMPLETE. Changes had no replacements or deletions. Exact new-origin CORS preflight returned 204, and all six new project/production routes returned 401 anonymously.
+- Real project `ONEORIGIN Production` was created for the existing operator account: `2f00ee5b-56b6-412e-a51b-1d06f0631247`.
+- Real CodeBuild `Project-adkv63KGpsR1:5ef9e9cd-45e4-4a15-9544-257f29cbadc9` succeeded from `examplessdk-lgtm/1origin` main commit `7a9a9821d6f88179c8f62be651e47b49f71247cb`.
+- Real production release `4b343074-e89c-49c8-b957-e4ebefa1ed14` reached READY, with 96 persistent production objects. Production root returned 200; 17 referenced JS/CSS assets and two nested pages returned 200. Checked text assets no longer depended on the expiring preview base path.
+- Owner-scoped project/release reads succeeded; a different subject received 404. These backend checks used authorized administrative Lambda invocations with the known operator subject, not a fabricated browser JWT. API Gateway authentication was separately checked for anonymous denial.
+- The deployed browser displayed both new phases, the Sign in button, and the production workspace. Sign in reached the actual Cognito form with the new callback, authorization code flow and PKCE S256; no credential values were read or entered, and an interactive signed-in browser session was not claimed as verified.
+
+- All 17 public agent-readiness HTTP checks passed on the deployed `https://os.1origin.dev` after this release.
