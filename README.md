@@ -1,3 +1,5 @@
+[![ONEORIGIN — Where Intelligence Begins](docs/assets/oneorigin-banner.svg)](docs/oneorigin-banner.html)
+
 # create-oneorigin-app
 
 **Start an ONEORIGIN website, Worker API, or AI agent project on Cloudflare Workers.**
@@ -5,6 +7,8 @@
 [`create-oneorigin-app`](https://www.npmjs.com/package/create-oneorigin-app) is a command-line project generator. It creates application files, Wrangler configuration, and npm scripts for local development, deployment validation, and publishing to your Cloudflare account.
 
 [npm package](https://www.npmjs.com/package/create-oneorigin-app) · [Application source](https://github.com/examplessdk-lgtm/one.origin) · [Technical documentation](docs/MIGRATION.md)
+
+[Interactive banner source](docs/oneorigin-banner.html) — download and open in a browser for the animated neural grid and interactive effects. GitHub displays the static SVG above.
 
 ## Quick start
 

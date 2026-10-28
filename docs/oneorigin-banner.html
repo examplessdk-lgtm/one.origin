@@ -1,0 +1,1085 @@
+<!DOCTYPE html>
+<html lang="th" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ONEORIGIN — Where Intelligence Begins</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts for ultra-crisp typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@600;700;800;900&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --neon-blue: #0077ff;
+      --neon-cyan: #4da6ff;
+      --neon-core: #e6f4ff;
+      --bg-void: #010308;
+    }
+
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background-color: #000104;
+      color: #ffffff;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      overflow: hidden;
+    }
+
+    /* Main Stage Container */
+    .stage-wrapper {
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: radial-gradient(circle at 50% 50%, #040b1a 0%, #000103 100%);
+      padding: 0;
+      transition: padding 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* Original Aspect Ratio Frame Mode (approx 2.06 : 1 like reference image) */
+    .stage-wrapper.aspect-mode {
+      padding: clamp(12px, 3vw, 40px);
+    }
+
+    .banner-canvas-container {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      background: #010308;
+      overflow: hidden;
+      transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+      box-shadow: 0 0 0 rgba(0, 102, 255, 0);
+    }
+
+    .stage-wrapper.aspect-mode .banner-canvas-container {
+      width: min(100%, calc((100vh - 80px) * 2.06));
+      aspect-ratio: 2.06 / 1;
+      height: auto;
+      max-height: calc(100vh - 40px);
+      border-radius: 16px;
+      border: 1px solid rgba(0, 119, 255, 0.28);
+      box-shadow:
+        0 25px 80px -15px rgba(0, 0, 0, 0.95),
+        0 0 50px -10px rgba(0, 102, 255, 0.22);
+    }
+
+    /* Container Query / Responsive Scaling Inside Banner */
+    .banner-inner {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      perspective: 1200px;
+      transform-style: preserve-3d;
+    }
+
+    /* Subtle Ambient Right-Side Deep Nebula */
+    .ambient-nebula {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(circle at 82% 50%, rgba(0, 75, 200, 0.22) 0%, rgba(0, 35, 110, 0.08) 38%, transparent 68%),
+        radial-gradient(circle at 92% 85%, rgba(0, 102, 255, 0.16) 0%, transparent 45%),
+        radial-gradient(circle at 75% 15%, rgba(0, 90, 230, 0.12) 0%, transparent 45%),
+        linear-gradient(90deg, #010206 0%, #010308 42%, rgba(2, 8, 23, 0.65) 75%, rgba(3, 12, 34, 0.4) 100%);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* Interactive Canvas Layer for Isometric Grid & Nodes */
+    #neuralGridCanvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 5;
+      pointer-events: none;
+    }
+
+    /* Left Content Block */
+    .left-content {
+      position: absolute;
+      left: 4.8%;
+      top: 0;
+      bottom: 0;
+      width: 62%;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      pointer-events: none;
+      transform-style: preserve-3d;
+      transition: transform 0.15s ease-out;
+    }
+
+    /* ONEORIGIN Custom Vector SVG Wrapper */
+    .logo-svg-wrapper {
+      width: 96%;
+      max-width: 920px;
+      margin-top: -4.5%;
+      pointer-events: auto;
+      cursor: pointer;
+      filter: drop-shadow(0 0 18px rgba(0, 110, 255, 0.45));
+      transition: filter 0.35s ease, transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .logo-svg-wrapper:hover {
+      filter: drop-shadow(0 0 28px rgba(0, 140, 255, 0.85)) drop-shadow(0 0 60px rgba(0, 90, 255, 0.45));
+      transform: scale(1.012);
+    }
+
+    /* Subtitle: Where Intelligence Begins */
+    .subtitle-text {
+      margin-top: 2.1%;
+      margin-left: 0.3%;
+      font-family: 'Inter', sans-serif;
+      font-weight: 400;
+      font-size: clamp(14px, 2.75vw, 42px);
+      letter-spacing: 0.03em;
+      background: linear-gradient(90deg, #9aa4b4 0%, #c8d2e2 50%, #8e98a8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 2px 20px rgba(0, 102, 255, 0.18);
+      pointer-events: auto;
+      transition: all 0.3s ease;
+    }
+
+    .subtitle-text:hover {
+      background: linear-gradient(90deg, #ffffff 0%, #80c4ff 55%, #b8d8ff 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 0 25px rgba(0, 136, 255, 0.55);
+    }
+
+    /* Bottom Footer Tagline */
+    .bottom-tagline {
+      position: absolute;
+      left: 5.0%;
+      bottom: 8.5%;
+      z-index: 12;
+      display: flex;
+      align-items: center;
+      gap: clamp(8px, 1.4vw, 22px);
+      font-family: 'Inter', sans-serif;
+      font-weight: 600;
+      font-size: clamp(9px, 1.25vw, 19px);
+      letter-spacing: 0.085em;
+      color: #7c8799;
+      text-transform: uppercase;
+      pointer-events: auto;
+    }
+
+    .bottom-tagline span.tag-item {
+      transition: color 0.3s ease, text-shadow 0.3s ease;
+      cursor: pointer;
+    }
+
+    .bottom-tagline span.tag-item:hover {
+      color: #d6e8ff;
+      text-shadow: 0 0 14px rgba(0, 136, 255, 0.8);
+    }
+
+    .glowing-dot {
+      width: clamp(5px, 0.65vw, 10px);
+      height: clamp(5px, 0.65vw, 10px);
+      border-radius: 9999px;
+      background: #0077ff;
+      box-shadow:
+        0 0 8px #0077ff,
+        0 0 16px #0055ff,
+        0 0 24px rgba(0, 136, 255, 0.9);
+      animation: pulseDot 2.4s infinite ease-in-out;
+    }
+
+    @keyframes pulseDot {
+      0%, 100% {
+        transform: scale(1);
+        opacity: 0.9;
+        box-shadow: 0 0 8px #0077ff, 0 0 18px #0055ff;
+      }
+      50% {
+        transform: scale(1.35);
+        opacity: 1;
+        box-shadow: 0 0 14px #4da6ff, 0 0 28px #0077ff, 0 0 40px #0055ff;
+      }
+    }
+
+    /* Right Emblem (Octocat Silhouette Layer) */
+    .octocat-container {
+      position: absolute;
+      right: 5.8%;
+      top: 50%;
+      transform: translateY(-49%);
+      width: 24.2%;
+      aspect-ratio: 1 / 1;
+      z-index: 3; /* Sits below neuralGridCanvas (z-index 5) so grid lines & nodes pass across it like original image */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: auto;
+      cursor: pointer;
+      transition: transform 0.25s ease-out, filter 0.35s ease;
+    }
+
+    .octocat-svg {
+      width: 100%;
+      height: 100%;
+      overflow: visible;
+    }
+
+    /* Corner Star Flare Animation */
+    .star-flare {
+      transform-origin: center;
+      animation: starTwinkle 3.2s infinite ease-in-out alternate;
+    }
+    .star-flare.delay-1 { animation-delay: 0.7s; }
+    .star-flare.delay-2 { animation-delay: 1.5s; }
+    .star-flare.delay-3 { animation-delay: 2.2s; }
+
+    @keyframes starTwinkle {
+      0% { opacity: 0.75; transform: scale(0.88); }
+      50% { opacity: 1; transform: scale(1.12); }
+      100% { opacity: 0.85; transform: scale(0.95); }
+    }
+
+    /* Floating Interactive Control Bar */
+    .hud-controls {
+      position: fixed;
+      bottom: 18px;
+      right: 18px;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 9999px;
+      background: rgba(5, 12, 28, 0.78);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(0, 136, 255, 0.3);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6), 0 0 20px rgba(0, 102, 255, 0.15);
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+
+    .hud-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 500;
+      color: #b8cef0;
+      background: rgba(0, 102, 255, 0.12);
+      border: 1px solid rgba(0, 136, 255, 0.25);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .hud-btn:hover {
+      color: #ffffff;
+      background: rgba(0, 119, 255, 0.35);
+      border-color: rgba(77, 166, 255, 0.7);
+      box-shadow: 0 0 15px rgba(0, 119, 255, 0.45);
+    }
+
+    .hud-btn.active {
+      color: #ffffff;
+      background: linear-gradient(135deg, #0066ff 0%, #0044cc 100%);
+      border-color: #66b3ff;
+      box-shadow: 0 0 16px rgba(0, 119, 255, 0.6);
+    }
+
+    /* Responsive adjustments for smaller mobile screens in portrait */
+    @media (max-width: 768px) {
+      .stage-wrapper.aspect-mode {
+        padding: 8px;
+      }
+      .hud-controls {
+        bottom: 12px;
+        right: 50%;
+        transform: translateX(50%);
+        width: max-content;
+        max-width: 94vw;
+        overflow-x: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Main Stage Wrapper (Starts in Original Aspect Ratio Mode for 1:1 Fidelity) -->
+  <div id="stageWrapper" class="stage-wrapper aspect-mode">
+    <div id="bannerContainer" class="banner-canvas-container">
+      <div id="bannerInner" class="banner-inner">
+
+        <!-- 1. Deep Tech Nebula Background -->
+        <div class="ambient-nebula"></div>
+
+        <!-- 2. Left Typography & Custom High-Precision Vector ONEORIGIN Logo -->
+        <div id="leftContent" class="left-content">
+          <div id="logoTrigger" class="logo-svg-wrapper" title="คลิกเพื่อปล่อยคลื่นพลังงานแสง (Neural Surge)">
+            <svg viewBox="0 0 1120 150" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" style="overflow: visible;">
+              <defs>
+                <!-- Outer Intense Blue Neon Glow Filter -->
+                <filter id="neonGlow" x="-30%" y="-50%" width="160%" height="200%">
+                  <feGaussianBlur in="SourceGraphic" stdDeviation="3.5" result="blur1" />
+                  <feGaussianBlur in="SourceGraphic" stdDeviation="9" result="blur2" />
+                  <feGaussianBlur in="SourceGraphic" stdDeviation="18" result="blur3" />
+                  <feMerge>
+                    <feMergeNode in="blur3" />
+                    <feMergeNode in="blur2" />
+                    <feMergeNode in="blur1" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+
+                <!-- Star Lens Flare Filter -->
+                <filter id="flareGlow" x="-100%" y="-100%" width="300%" height="300%">
+                  <feGaussianBlur stdDeviation="4" result="blur" />
+                  <feMerge>
+                    <feMergeNode in="blur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+
+                <!-- Metallic Cyan-Blue Gradient for Letter Outlines -->
+                <linearGradient id="strokeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#99d6ff" />
+                  <stop offset="25%" stop-color="#1a8cff" />
+                  <stop offset="50%" stop-color="#005ce6" />
+                  <stop offset="78%" stop-color="#3399ff" />
+                  <stop offset="100%" stop-color="#b3e0ff" />
+                </linearGradient>
+
+                <!-- Subtle Inner Dark Fill Gradient -->
+                <linearGradient id="innerDarkGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stop-color="#020b1e" stop-opacity="0.88" />
+                  <stop offset="50%" stop-color="#01040a" stop-opacity="0.95" />
+                  <stop offset="100%" stop-color="#031230" stop-opacity="0.88" />
+                </linearGradient>
+
+                <!-- Reusable Corner Starburst Flare -->
+                <g id="cornerFlare">
+                  <circle cx="0" cy="0" r="14" fill="url(#flareRadial)" />
+                  <ellipse cx="0" cy="0" rx="28" ry="1.8" fill="#cceeff" filter="url(#flareGlow)" />
+                  <ellipse cx="0" cy="0" rx="1.8" ry="22" fill="#cceeff" filter="url(#flareGlow)" />
+                  <ellipse cx="0" cy="0" rx="12" ry="1.2" transform="rotate(45)" fill="#ffffff" />
+                  <ellipse cx="0" cy="0" rx="12" ry="1.2" transform="rotate(-45)" fill="#ffffff" />
+                  <circle cx="0" cy="0" r="3.2" fill="#ffffff" />
+                </g>
+
+                <radialGradient id="flareRadial">
+                  <stop offset="0%" stop-color="#ffffff" stop-opacity="1" />
+                  <stop offset="30%" stop-color="#4da6ff" stop-opacity="0.85" />
+                  <stop offset="70%" stop-color="#0055ff" stop-opacity="0.3" />
+                  <stop offset="100%" stop-color="#0044ff" stop-opacity="0" />
+                </radialGradient>
+
+                <!-- Exact Geometric Sci-Fi Letter Paths for ONEORIGIN -->
+                <g id="oneoriginPaths">
+                  <!-- 1. O (x: 10..135) -->
+                  <path d="M 38 25 H 107 Q 135 25 135 53 V 97 Q 135 125 107 125 H 38 Q 10 125 10 97 V 53 Q 10 25 38 25 Z
+                           M 44 45 Q 32 45 32 57 V 93 Q 32 105 44 105 H 101 Q 113 105 113 93 V 57 Q 113 45 101 45 Z" fill-rule="evenodd" />
+
+                  <!-- 2. N (x: 158..282) -->
+                  <path d="M 158 25 H 184 L 260 96 V 25 H 282 V 125 H 256 L 180 54 V 125 H 158 Z" />
+
+                  <!-- 3. E (x: 306..424) -->
+                  <path d="M 306 25 H 424 V 45 H 328 V 65 H 414 V 85 H 328 V 105 H 424 V 125 H 306 Z" />
+
+                  <!-- 4. O (x: 446..571) -->
+                  <path d="M 474 25 H 543 Q 571 25 571 53 V 97 Q 571 125 543 125 H 474 Q 446 125 446 97 V 53 Q 446 25 474 25 Z
+                           M 480 45 Q 468 45 468 57 V 93 Q 468 105 480 105 H 537 Q 549 105 549 93 V 57 Q 549 45 537 45 Z" fill-rule="evenodd" />
+
+                  <!-- 5. R (x: 594..718) -->
+                  <path d="M 594 25 H 690 Q 718 25 718 51 V 63 Q 718 85 693 88 L 718 125 H 692 L 669 90 H 616 V 125 H 594 Z
+                           M 616 45 V 70 H 684 Q 696 70 696 57.5 Q 696 45 684 45 Z" fill-rule="evenodd" />
+
+                  <!-- 6. I (x: 742..766) -->
+                  <path d="M 742 25 H 766 V 125 H 742 Z" />
+
+                  <!-- 7. G (x: 790..916) -->
+                  <path d="M 818 25 H 914 V 45 H 824 Q 812 45 812 57 V 93 Q 812 105 824 105 H 894 V 83 H 852 V 64 H 916 V 125 H 818 Q 790 125 790 97 V 53 Q 790 25 818 25 Z" />
+
+                  <!-- 8. I (x: 940..964) -->
+                  <path d="M 940 25 H 964 V 125 H 940 Z" />
+
+                  <!-- 9. N (x: 988..1112) -->
+                  <path d="M 988 25 H 1014 L 1090 96 V 25 H 1112 V 125 H 1086 L 1010 54 V 125 H 988 Z" />
+                </g>
+              </defs>
+
+              <!-- Layer 1: Deep Blue Ambient Back-Glow -->
+              <use href="#oneoriginPaths" fill="none" stroke="#0055ff" stroke-width="9" stroke-linejoin="round" filter="url(#neonGlow)" opacity="0.85" />
+
+              <!-- Layer 2: Crisp Dark Interior Fill + Bright Neon Stroke -->
+              <use href="#oneoriginPaths" fill="url(#innerDarkGrad)" stroke="url(#strokeGrad)" stroke-width="3.6" stroke-linejoin="round" />
+
+              <!-- Layer 3: Inner Razor-Sharp Highlight Rim -->
+              <use href="#oneoriginPaths" fill="none" stroke="#b3e6ff" stroke-width="1.1" stroke-linejoin="round" opacity="0.8" />
+
+              <!-- Layer 4: Signature Corner Star Flares (Matching Reference Image) -->
+              <!-- Top-left of First O -->
+              <use href="#cornerFlare" x="15" y="31" class="star-flare" />
+              <!-- Top-right of R / I region -->
+              <use href="#cornerFlare" x="744" y="27" class="star-flare delay-1" transform="scale(0.85)" />
+              <!-- Top-right of Last N -->
+              <use href="#cornerFlare" x="1108" y="27" class="star-flare delay-2" transform="scale(0.8)" />
+              <!-- Bottom-right of Last N -->
+              <use href="#cornerFlare" x="1108" y="122" class="star-flare delay-3" transform="scale(0.95)" />
+            </svg>
+          </div>
+
+          <!-- Subtitle -->
+          <div class="subtitle-text">
+            Where Intelligence Begins
+          </div>
+        </div>
+
+        <!-- 3. Bottom Left Footer Text -->
+        <div class="bottom-tagline">
+          <span class="tag-item" onclick="triggerPulseWave(0.25, 0.85)">AI INFRASTRUCTURE</span>
+          <span class="glowing-dot"></span>
+          <span class="tag-item" onclick="triggerPulseWave(0.45, 0.85)">DEEP-TECH DEVELOPMENT</span>
+        </div>
+
+        <!-- 4. Right Side GitHub Octocat Silhouette with Outer & Inner Neon Glow -->
+        <div id="octocatEmblem" class="octocat-container" title="คลิกเพื่อสแกนโครงข่ายประสาทเทียม (Octocat Neural Core)">
+          <svg class="octocat-svg" viewBox="0 0 500 500" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <!-- Outer Circle Blue Glow -->
+              <filter id="circleOuterGlow" x="-35%" y="-35%" width="170%" height="170%">
+                <feGaussianBlur in="SourceGraphic" stdDeviation="12" result="blur1" />
+                <feGaussianBlur in="SourceGraphic" stdDeviation="26" result="blur2" />
+                <feMerge>
+                  <feMergeNode in="blur2" />
+                  <feMergeNode in="blur1" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+
+              <!-- Inner Octocat Neon Edge Glow -->
+              <filter id="catEdgeGlow" x="-30%" y="-30%" width="160%" height="160%">
+                <feGaussianBlur in="SourceGraphic" stdDeviation="6" result="b1" />
+                <feGaussianBlur in="SourceGraphic" stdDeviation="16" result="b2" />
+                <feMerge>
+                  <feMergeNode in="b2" />
+                  <feMergeNode in="b1" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+
+              <linearGradient id="rimBlueGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#0055ff" stop-opacity="0.75" />
+                <stop offset="50%" stop-color="#3399ff" stop-opacity="0.95" />
+                <stop offset="100%" stop-color="#0044cc" stop-opacity="0.75" />
+              </linearGradient>
+
+              <!-- Authentic Octocat Silhouette Path (scaled to 500x500 viewBox) -->
+              <!-- Outer circle with bottom cutout for torso + Octocat inner contour -->
+              <path id="octocatCutoutPath" d="
+                M 250,22
+                C 124.0,22 22,124.0 22,250
+                C 22,350.8 87.3,436.2 177.9,466.4
+                C 189.3,468.5 193.5,461.5 193.5,455.4
+                C 193.5,450.0 193.3,435.6 193.2,416.6
+                C 129.8,430.4 116.4,386.0 116.4,386.0
+                C 106.0,359.7 91.1,352.7 91.1,352.7
+                C 70.4,338.6 92.7,338.9 92.7,338.9
+                C 115.6,340.5 127.6,362.4 127.6,362.4
+                C 148.0,397.3 181.0,387.2 194.0,381.4
+                C 196.1,366.6 202.0,356.6 208.5,350.9
+                C 157.9,345.1 104.7,325.6 104.7,238.3
+                C 104.7,213.4 113.6,193.1 128.2,177.1
+                C 125.8,171.3 118.0,148.2 130.4,116.8
+                C 130.4,116.8 149.5,110.7 193.0,140.2
+                C 211.2,135.1 230.6,132.6 250.0,132.5
+                C 269.4,132.6 288.8,135.1 307.0,140.2
+                C 350.5,110.7 369.6,116.8 369.6,116.8
+                C 382.0,148.2 374.2,171.3 371.8,177.1
+                C 386.4,193.1 395.3,213.4 395.3,238.3
+                C 395.3,325.9 342.0,345.0 291.2,350.7
+                C 299.4,357.7 306.7,371.6 306.7,392.9
+                C 306.7,423.4 306.4,447.9 306.4,455.4
+                C 306.4,461.5 310.6,468.7 322.1,466.4
+                C 412.7,436.1 478,350.7 478,250
+                C 478,124.0 376.0,22 250,22 Z" />
+
+              <!-- Inner Cat Silhouette Alone (for inner blue rim glow on pitch black cat body) -->
+              <path id="catSilhouetteOnly" d="
+                M 193.5,455.4
+                C 193.5,450.0 193.3,435.6 193.2,416.6
+                C 129.8,430.4 116.4,386.0 116.4,386.0
+                C 106.0,359.7 91.1,352.7 91.1,352.7
+                C 70.4,338.6 92.7,338.9 92.7,338.9
+                C 115.6,340.5 127.6,362.4 127.6,362.4
+                C 148.0,397.3 181.0,387.2 194.0,381.4
+                C 196.1,366.6 202.0,356.6 208.5,350.9
+                C 157.9,345.1 104.7,325.6 104.7,238.3
+                C 104.7,213.4 113.6,193.1 128.2,177.1
+                C 125.8,171.3 118.0,148.2 130.4,116.8
+                C 130.4,116.8 149.5,110.7 193.0,140.2
+                C 211.2,135.1 230.6,132.6 250.0,132.5
+                C 269.4,132.6 288.8,135.1 307.0,140.2
+                C 350.5,110.7 369.6,116.8 369.6,116.8
+                C 382.0,148.2 374.2,171.3 371.8,177.1
+                C 386.4,193.1 395.3,213.4 395.3,238.3
+                C 395.3,325.9 342.0,345.0 291.2,350.7
+                C 299.4,357.7 306.7,371.6 306.7,392.9
+                C 306.7,423.4 306.4,447.9 306.4,455.4" />
+            </defs>
+
+            <!-- Base Dark Disc so background is deep void black inside circle -->
+            <circle cx="250" cy="250" r="228" fill="#000206" opacity="0.92" />
+
+            <!-- Glowing Blue Aura Behind Circle & Cat Contour -->
+            <use href="#octocatCutoutPath" fill="#000205" stroke="#0066ff" stroke-width="8" filter="url(#circleOuterGlow)" opacity="0.95" />
+
+            <!-- Soft Inner Blue Rim Along Octocat Silhouette -->
+            <use href="#catSilhouetteOnly" fill="#01030a" stroke="#1a8cff" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" filter="url(#catEdgeGlow)" opacity="0.9" />
+
+            <!-- Crisp Neon Edge Outline -->
+            <use href="#octocatCutoutPath" fill="#010206" fill-opacity="0.88" stroke="url(#rimBlueGrad)" stroke-width="2.5" />
+          </svg>
+        </div>
+
+        <!-- 5. High-DPI Interactive Isometric Neural Grid & Star Nodes Canvas -->
+        <canvas id="neuralGridCanvas"></canvas>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Floating Interactive Controls HUD -->
+  <div class="hud-controls">
+    <button id="btnAspect" class="hud-btn active" onclick="toggleAspectMode()">
+      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <rect x="3" y="5" width="18" height="14" rx="2" />
+      </svg>
+      <span>ขนาดต้นฉบับ (Original Ratio)</span>
+    </button>
+    <button id="btnPulse" class="hud-btn" onclick="triggerGlobalSurge()">
+      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+      </svg>
+      <span>ปล่อยคลื่นแสง (Neural Pulse)</span>
+    </button>
+    <button id="btnParallax" class="hud-btn active" onclick="toggleParallax()">
+      <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5" />
+      </svg>
+      <span>3D โต้ตอบเมาส์</span>
+    </button>
+  </div>
+
+  <script>
+    /**
+     * ONEORIGIN — Ultra-HD Interactive Isometric Neural Grid & Star Node Engine
+     * Recreates the exact right-side isometric lattice, glowing vertex star-flares,
+     * interactive energy pulses, and 3D parallax responsiveness.
+     */
+    const canvas = document.getElementById('neuralGridCanvas');
+    const ctx = canvas.getContext('2d');
+    const bannerContainer = document.getElementById('bannerContainer');
+    const leftContent = document.getElementById('leftContent');
+    const octocatEmblem = document.getElementById('octocatEmblem');
+    const stageWrapper = document.getElementById('stageWrapper');
+
+    let width = 0;
+    let height = 0;
+    let dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+
+    // Interactive Pointer State
+    const pointer = {
+      x: -1000,
+      y: -1000,
+      normX: 0.5,
+      normY: 0.5,
+      targetNormX: 0.5,
+      targetNormY: 0.5,
+      active: false
+    };
+
+    let parallaxEnabled = true;
+    let aspectMode = true;
+
+    // Lattice Data Structures
+    let vertices = [];
+    let edges = [];
+    let pulses = [];
+    let shockwaves = [];
+
+    // Signature Bright Nodes matching the exact visual layout of the reference image
+    // Normalized coordinates (nx, ny) and base intensity (0..1)
+    const signatureHotspots = [
+      { nx: 0.862, ny: 0.238, intensity: 1.0, radius: 1.25 }, // Bright node above Octocat right ear
+      { nx: 0.942, ny: 0.305, intensity: 0.95, radius: 1.15 }, // Bright node right of Octocat ear
+      { nx: 0.865, ny: 0.402, intensity: 0.72, radius: 0.85 }, // Node inside Octocat right ear
+      { nx: 0.865, ny: 0.585, intensity: 0.98, radius: 1.2 },  // Bright node on Octocat lower right cheek
+      { nx: 0.788, ny: 0.665, intensity: 0.85, radius: 1.0 },  // Node on Octocat tentacle/neck
+      { nx: 0.708, ny: 0.785, intensity: 0.92, radius: 1.1 },  // Bright node lower-left of Octocat
+      { nx: 0.865, ny: 0.945, intensity: 1.0, radius: 1.3 },   // Bright node near bottom-right
+      { nx: 0.628, ny: 0.635, intensity: 0.55, radius: 0.75 }, // Subtle node mid-lower
+      { nx: 0.788, ny: 0.118, intensity: 0.55, radius: 0.75 }, // Subtle node top
+      { nx: 0.708, ny: 0.895, intensity: 0.60, radius: 0.8 }
+    ];
+
+    /**
+     * Build Isometric Triangular/Hexagonal Lattice matching the reference image:
+     * Vertical lines + +30 deg and -30 deg diagonal lines on the right half of the banner.
+     */
+    function buildIsometricLattice() {
+      vertices = [];
+      edges = [];
+
+      // Column spacing tuned to match reference proportions
+      const colStep = width * 0.078;
+      const rowStep = colStep * Math.tan(Math.PI / 6) * 2; // Isometric triangle height step
+      const halfRow = rowStep / 2;
+
+      // Start lattice around x = 46% of width through 106%
+      const startCol = -4;
+      const endCol = 10;
+      const anchorX = width * 0.788; // Aligns column directly with key Octocat vertices
+      const anchorY = height * 0.238;
+
+      const gridMap = new Map();
+
+      for (let c = startCol; c <= endCol; c++) {
+        const x = anchorX + c * colStep;
+        if (x < width * 0.44 || x > width * 1.08) continue;
+
+        const isOddCol = Math.abs(c % 2) === 1;
+        for (let r = -6; r <= 12; r++) {
+          const y = anchorY + r * rowStep + (isOddCol ? halfRow : 0);
+          if (y < -height * 0.15 || y > height * 1.15) continue;
+
+          // Fade visibility smoothly from left (x = 48%) to right (x = 98%)
+          const nx = x / width;
+          const ny = y / height;
+          const horizontalMask = Math.max(0, Math.min(1, (nx - 0.48) / 0.38));
+
+          // Check proximity to signature bright hotspots from the original image
+          let hotspotBoost = 0;
+          let flareScale = 0.6;
+          for (const spot of signatureHotspots) {
+            const dist = Math.hypot(nx - spot.nx, (ny - spot.ny) * (height / width));
+            if (dist < 0.048) {
+              if (spot.intensity > hotspotBoost) {
+                hotspotBoost = spot.intensity;
+                flareScale = spot.radius;
+              }
+            }
+          }
+
+          const idx = vertices.length;
+          const key = `${c},${r}`;
+          gridMap.set(key, idx);
+
+          vertices.push({
+            id: idx,
+            c,
+            r,
+            x,
+            y,
+            nx,
+            ny,
+            alpha: horizontalMask,
+            hotspot: hotspotBoost,
+            flareScale,
+            energy: 0,
+            phase: Math.random() * Math.PI * 2
+          });
+        }
+      }
+
+      // Connect isometric neighbors:
+      // 1. Vertical neighbors: (c, r) -> (c, r+1)
+      // 2. Diagonal neighbors between adjacent columns
+      function addEdge(idxA, idxB, isPrimary = true) {
+        if (idxA === undefined || idxB === undefined) return;
+        edges.push({
+          a: idxA,
+          b: idxB,
+          isPrimary
+        });
+      }
+
+      vertices.forEach((v) => {
+        const { c, r, id } = v;
+        const isOddCol = Math.abs(c % 2) === 1;
+
+        // Vertical edge along same column
+        addEdge(id, gridMap.get(`${c},${r + 1}`), true);
+
+        // Diagonal edges to right column (c + 1)
+        if (isOddCol) {
+          addEdge(id, gridMap.get(`${c + 1},${r}`), true);
+          addEdge(id, gridMap.get(`${c + 1},${r + 1}`), true);
+        } else {
+          addEdge(id, gridMap.get(`${c + 1},${r - 1}`), true);
+          addEdge(id, gridMap.get(`${c + 1},${r}`), true);
+        }
+
+        // Subtle secondary horizontal subdivisions like in the reference background
+        addEdge(id, gridMap.get(`${c + 2},${r}`), false);
+      });
+    }
+
+    /**
+     * Spawn an energy pulse traveling along lattice edges
+     */
+    function spawnRandomPulse() {
+      if (edges.length === 0) return;
+      const validEdges = edges.filter(e => e.isPrimary && vertices[e.a].alpha > 0.25);
+      if (validEdges.length === 0) return;
+      const edge = validEdges[Math.floor(Math.random() * validEdges.length)];
+      pulses.push({
+        a: edge.a,
+        b: edge.b,
+        progress: 0,
+        speed: 0.012 + Math.random() * 0.018,
+        reverse: Math.random() > 0.5
+      });
+    }
+
+    /**
+     * Trigger an interactive circular shockwave across the neural lattice
+     */
+    function triggerPulseWave(normX, normY) {
+      shockwaves.push({
+        x: normX * width,
+        y: normY * height,
+        radius: 0,
+        maxRadius: Math.max(width, height) * 0.85,
+        speed: width * 0.016,
+        alpha: 1.0
+      });
+
+      // Also spawn multiple traveling edge pulses
+      for (let i = 0; i < 8; i++) {
+        spawnRandomPulse();
+      }
+    }
+
+    function triggerGlobalSurge() {
+      triggerPulseWave(0.82, 0.50);
+    }
+
+    /**
+     * Draw a realistic glowing star-flare node at (x, y)
+     */
+    function drawStarNode(x, y, intensity, scale, time) {
+      const breathe = 0.88 + 0.16 * Math.sin(time * 0.003 + x * 0.02);
+      const radius = Math.max(8, width * 0.022) * scale * breathe;
+
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+
+      // 1. Soft Outer Blue Radial Halo
+      const grad = ctx.createRadialGradient(x, y, 0, x, y, radius * 1.45);
+      grad.addColorStop(0, `rgba(255, 255, 255, ${0.95 * intensity})`);
+      grad.addColorStop(0.18, `rgba(110, 195, 255, ${0.85 * intensity})`);
+      grad.addColorStop(0.45, `rgba(0, 110, 255, ${0.42 * intensity})`);
+      grad.addColorStop(1, 'rgba(0, 60, 200, 0)');
+
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(x, y, radius * 1.45, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 2. Crisp Horizontal & Vertical Star Spikes for High-Intensity Nodes
+      if (intensity > 0.45) {
+        const spikeLen = radius * 1.55;
+        const spikeThick = Math.max(1.1, width * 0.0012);
+
+        const hGrad = ctx.createLinearGradient(x - spikeLen, y, x + spikeLen, y);
+        hGrad.addColorStop(0, 'rgba(0, 119, 255, 0)');
+        hGrad.addColorStop(0.5, `rgba(200, 238, 255, ${0.8 * intensity})`);
+        hGrad.addColorStop(1, 'rgba(0, 119, 255, 0)');
+
+        ctx.fillStyle = hGrad;
+        ctx.fillRect(x - spikeLen, y - spikeThick * 0.5, spikeLen * 2, spikeThick);
+
+        const vGrad = ctx.createLinearGradient(x, y - spikeLen * 0.85, x, y + spikeLen * 0.85);
+        vGrad.addColorStop(0, 'rgba(0, 119, 255, 0)');
+        vGrad.addColorStop(0.5, `rgba(200, 238, 255, ${0.75 * intensity})`);
+        vGrad.addColorStop(1, 'rgba(0, 119, 255, 0)');
+
+        ctx.fillStyle = vGrad;
+        ctx.fillRect(x - spikeThick * 0.5, y - spikeLen * 0.85, spikeThick, spikeLen * 1.7);
+      }
+
+      // 3. Hot White-Cyan Core Pinpoint
+      ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(1, intensity * 1.1)})`;
+      ctx.beginPath();
+      ctx.arc(x, y, Math.max(1.5, width * 0.0022 * scale), 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    /**
+     * Main Render Loop
+     */
+    function animate(time) {
+      ctx.clearRect(0, 0, width, height);
+
+      // Smooth pointer interpolation for 3D parallax
+      pointer.normX += (pointer.targetNormX - pointer.normX) * 0.08;
+      pointer.normY += (pointer.targetNormY - pointer.normY) * 0.08;
+
+      if (parallaxEnabled) {
+        const tiltX = (pointer.normY - 0.5) * -6;
+        const tiltY = (pointer.normX - 0.5) * 8;
+        const shiftX = (pointer.normX - 0.5) * -14;
+        const shiftY = (pointer.normY - 0.5) * -10;
+
+        leftContent.style.transform = `translate3d(${shiftX * 0.6}px, ${shiftY * 0.6}px, 12px) rotateX(${tiltX * 0.5}deg) rotateY(${tiltY * 0.5}deg)`;
+        octocatEmblem.style.transform = `translate3d(${shiftX * -0.9}px, calc(-49% + ${shiftY * -0.9}px), 8px)`;
+      } else {
+        leftContent.style.transform = 'none';
+        octocatEmblem.style.transform = 'translateY(-49%)';
+      }
+
+      // Update Shockwaves
+      for (let i = shockwaves.length - 1; i >= 0; i--) {
+        const sw = shockwaves[i];
+        sw.radius += sw.speed;
+        sw.alpha = Math.max(0, 1 - sw.radius / sw.maxRadius);
+
+        // Energize vertices touched by shockwave ring
+        vertices.forEach(v => {
+          const d = Math.hypot(v.x - sw.x, v.y - sw.y);
+          if (Math.abs(d - sw.radius) < width * 0.045) {
+            v.energy = Math.min(1, v.energy + sw.alpha * 0.45);
+          }
+        });
+
+        if (sw.radius >= sw.maxRadius) {
+          shockwaves.splice(i, 1);
+        }
+      }
+
+      // Update Vertex Interactive Hover Energy
+      vertices.forEach(v => {
+        v.energy *= 0.93;
+        if (pointer.active) {
+          const dist = Math.hypot(v.x - pointer.x, v.y - pointer.y);
+          const influenceRadius = width * 0.16;
+          if (dist < influenceRadius) {
+            const boost = Math.pow(1 - dist / influenceRadius, 2);
+            v.energy = Math.max(v.energy, boost * 0.9);
+          }
+        }
+      });
+
+      // 1. Draw Isometric Lattice Edges
+      ctx.save();
+      ctx.lineCap = 'round';
+      edges.forEach(e => {
+        const va = vertices[e.a];
+        const vb = vertices[e.b];
+        const baseAlpha = Math.min(va.alpha, vb.alpha);
+        if (baseAlpha <= 0.01) return;
+
+        const interactiveBoost = Math.max(va.energy, vb.energy);
+        const hotspotEdgeBoost = Math.max(va.hotspot, vb.hotspot) * 0.25;
+
+        if (e.isPrimary) {
+          const lineAlpha = Math.min(0.85, baseAlpha * (0.28 + hotspotEdgeBoost + interactiveBoost * 0.55));
+          ctx.strokeStyle = `rgba(18, 120, 255, ${lineAlpha})`;
+          ctx.lineWidth = Math.max(1, width * 0.00095 * (1 + interactiveBoost * 0.8));
+        } else {
+          const lineAlpha = Math.min(0.35, baseAlpha * (0.09 + interactiveBoost * 0.25));
+          ctx.strokeStyle = `rgba(10, 90, 220, ${lineAlpha})`;
+          ctx.lineWidth = Math.max(0.6, width * 0.0006);
+        }
+
+        ctx.beginPath();
+        ctx.moveTo(va.x, va.y);
+        ctx.lineTo(vb.x, vb.y);
+        ctx.stroke();
+      });
+      ctx.restore();
+
+      // 2. Draw Traveling Neural Data Pulses along Lattice Lines
+      if (Math.random() < 0.08 && pulses.length < 14) {
+        spawnRandomPulse();
+      }
+
+      ctx.save();
+      ctx.globalCompositeOperation = 'lighter';
+      for (let i = pulses.length - 1; i >= 0; i--) {
+        const p = pulses[i];
+        p.progress += p.speed;
+        if (p.progress >= 1) {
+          pulses.splice(i, 1);
+          continue;
+        }
+
+        const vStart = p.reverse ? vertices[p.b] : vertices[p.a];
+        const vEnd = p.reverse ? vertices[p.a] : vertices[p.b];
+        const px = vStart.x + (vEnd.x - vStart.x) * p.progress;
+        const py = vStart.y + (vEnd.y - vStart.y) * p.progress;
+        const fade = Math.sin(p.progress * Math.PI) * Math.min(vStart.alpha, vEnd.alpha);
+
+        const pGrad = ctx.createRadialGradient(px, py, 0, px, py, width * 0.012);
+        pGrad.addColorStop(0, `rgba(210, 242, 255, ${0.9 * fade})`);
+        pGrad.addColorStop(0.4, `rgba(0, 140, 255, ${0.55 * fade})`);
+        pGrad.addColorStop(1, 'rgba(0, 80, 255, 0)');
+
+        ctx.fillStyle = pGrad;
+        ctx.beginPath();
+        ctx.arc(px, py, width * 0.012, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.restore();
+
+      // 3. Draw Lattice Intersection Nodes & Bright Star Flares
+      vertices.forEach(v => {
+        if (v.alpha <= 0.04) return;
+
+        const totalIntensity = Math.min(1.25, v.hotspot + v.energy * 0.85);
+
+        if (totalIntensity > 0.35) {
+          // Render signature bright star flare node
+          drawStarNode(v.x, v.y, totalIntensity * v.alpha, v.flareScale + v.energy * 0.4, time);
+        } else {
+          // Render subtle intersection pinpoint
+          ctx.fillStyle = `rgba(60, 155, 255, ${v.alpha * 0.42})`;
+          ctx.beginPath();
+          ctx.arc(v.x, v.y, Math.max(1.2, width * 0.0012), 0, Math.PI * 2);
+          ctx.fill();
+        }
+      });
+
+      // 4. Draw Subtle Expanding Shockwave Ring if active
+      shockwaves.forEach(sw => {
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.strokeStyle = `rgba(77, 175, 255, ${sw.alpha * 0.38})`;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(sw.x, sw.y, sw.radius, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      });
+
+      requestAnimationFrame(animate);
+    }
+
+    /**
+     * Handle High-DPI Canvas Resize
+     */
+    function resizeCanvas() {
+      const rect = bannerContainer.getBoundingClientRect();
+      width = rect.width;
+      height = rect.height;
+      dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+
+      canvas.width = Math.round(width * dpr);
+      canvas.height = Math.round(height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      buildIsometricLattice();
+    }
+
+    /**
+     * Event Listeners for Mouse & Touch Interaction
+     */
+    function updatePointer(clientX, clientY) {
+      const rect = bannerContainer.getBoundingClientRect();
+      pointer.x = clientX - rect.left;
+      pointer.y = clientY - rect.top;
+      pointer.targetNormX = Math.max(0, Math.min(1, pointer.x / rect.width));
+      pointer.targetNormY = Math.max(0, Math.min(1, pointer.y / rect.height));
+      pointer.active = true;
+    }
+
+    bannerContainer.addEventListener('mousemove', (e) => {
+      updatePointer(e.clientX, e.clientY);
+    });
+
+    bannerContainer.addEventListener('mouseleave', () => {
+      pointer.active = false;
+      pointer.targetNormX = 0.5;
+      pointer.targetNormY = 0.5;
+    });
+
+    bannerContainer.addEventListener('mousedown', (e) => {
+      const rect = bannerContainer.getBoundingClientRect();
+      const nx = (e.clientX - rect.left) / rect.width;
+      const ny = (e.clientY - rect.top) / rect.height;
+      triggerPulseWave(nx, ny);
+    });
+
+    bannerContainer.addEventListener('touchstart', (e) => {
+      if (e.touches.length > 0) {
+        const t = e.touches[0];
+        updatePointer(t.clientX, t.clientY);
+        const rect = bannerContainer.getBoundingClientRect();
+        triggerPulseWave((t.clientX - rect.left) / rect.width, (t.clientY - rect.top) / rect.height);
+      }
+    }, { passive: true });
+
+    bannerContainer.addEventListener('touchmove', (e) => {
+      if (e.touches.length > 0) {
+        const t = e.touches[0];
+        updatePointer(t.clientX, t.clientY);
+      }
+    }, { passive: true });
+
+    bannerContainer.addEventListener('touchend', () => {
+      pointer.active = false;
+      pointer.targetNormX = 0.5;
+      pointer.targetNormY = 0.5;
+    });
+
+    // UI Controls
+    function toggleAspectMode() {
+      aspectMode = !aspectMode;
+      const btn = document.getElementById('btnAspect');
+      if (aspectMode) {
+        stageWrapper.classList.add('aspect-mode');
+        btn.classList.add('active');
+        btn.querySelector('span').textContent = 'ขนาดต้นฉบับ (Original Ratio)';
+      } else {
+        stageWrapper.classList.remove('aspect-mode');
+        btn.classList.remove('active');
+        btn.querySelector('span').textContent = 'เต็มหน้าจอ (Fullscreen)';
+      }
+      setTimeout(resizeCanvas, 50);
+      setTimeout(resizeCanvas, 520);
+    }
+
+    function toggleParallax() {
+      parallaxEnabled = !parallaxEnabled;
+      const btn = document.getElementById('btnParallax');
+      btn.classList.toggle('active', parallaxEnabled);
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+
+    window.onload = function () {
+      resizeCanvas();
+      // Initial welcome pulse on the right neural grid
+      setTimeout(() => triggerPulseWave(0.82, 0.50), 300);
+      requestAnimationFrame(animate);
+    };
+  </script>
+</body>
+</html>

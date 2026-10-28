@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1400" height="500" viewBox="0 0 1400 500" role="img" aria-label="ONEORIGIN — Where Intelligence Begins"><defs><radialGradient id="bg"><stop stop-color="#071d45"/><stop offset="1" stop-color="#010308"/></radialGradient><pattern id="grid" width="50" height="50" patternUnits="userSpaceOnUse"><path d="M 50 0 L 0 0 0 50" fill="none" stroke="#0877ff" stroke-opacity=".18"/></pattern></defs><rect width="1400" height="500" rx="20" fill="url(#bg)"/><rect width="1400" height="500" fill="url(#grid)"/><svg x="65" y="155" width="1070" height="145" viewBox="0 0 1120 150">
+              <defs>
+                <!-- Outer Intense Blue Neon Glow Filter -->
+                <filter id="neonGlow" x="-30%" y="-50%" width="160%" height="200%">
+                  <feGaussianBlur in="SourceGraphic" stdDeviation="3.5" result="blur1" />
+                  <feGaussianBlur in="SourceGraphic" stdDeviation="9" result="blur2" />
+                  <feGaussianBlur in="SourceGraphic" stdDeviation="18" result="blur3" />
+                  <feMerge>
+                    <feMergeNode in="blur3" />
+                    <feMergeNode in="blur2" />
+                    <feMergeNode in="blur1" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+
+                <!-- Star Lens Flare Filter -->
+                <filter id="flareGlow" x="-100%" y="-100%" width="300%" height="300%">
+                  <feGaussianBlur stdDeviation="4" result="blur" />
+                  <feMerge>
+                    <feMergeNode in="blur" />
+                    <feMergeNode in="SourceGraphic" />
+                  </feMerge>
+                </filter>
+
+                <!-- Metallic Cyan-Blue Gradient for Letter Outlines -->
+                <linearGradient id="strokeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="#99d6ff" />
+                  <stop offset="25%" stop-color="#1a8cff" />
+                  <stop offset="50%" stop-color="#005ce6" />
+                  <stop offset="78%" stop-color="#3399ff" />
+                  <stop offset="100%" stop-color="#b3e0ff" />
+                </linearGradient>
+
+                <!-- Subtle Inner Dark Fill Gradient -->
+                <linearGradient id="innerDarkGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stop-color="#020b1e" stop-opacity="0.88" />
+                  <stop offset="50%" stop-color="#01040a" stop-opacity="0.95" />
+                  <stop offset="100%" stop-color="#031230" stop-opacity="0.88" />
+                </linearGradient>
+
+                <!-- Reusable Corner Starburst Flare -->
+                <g id="cornerFlare">
+                  <circle cx="0" cy="0" r="14" fill="url(#flareRadial)" />
+                  <ellipse cx="0" cy="0" rx="28" ry="1.8" fill="#cceeff" filter="url(#flareGlow)" />
+                  <ellipse cx="0" cy="0" rx="1.8" ry="22" fill="#cceeff" filter="url(#flareGlow)" />
+                  <ellipse cx="0" cy="0" rx="12" ry="1.2" transform="rotate(45)" fill="#ffffff" />
+                  <ellipse cx="0" cy="0" rx="12" ry="1.2" transform="rotate(-45)" fill="#ffffff" />
+                  <circle cx="0" cy="0" r="3.2" fill="#ffffff" />
+                </g>
+
+                <radialGradient id="flareRadial">
+                  <stop offset="0%" stop-color="#ffffff" stop-opacity="1" />
+                  <stop offset="30%" stop-color="#4da6ff" stop-opacity="0.85" />
+                  <stop offset="70%" stop-color="#0055ff" stop-opacity="0.3" />
+                  <stop offset="100%" stop-color="#0044ff" stop-opacity="0" />
+                </radialGradient>
+
+                <!-- Exact Geometric Sci-Fi Letter Paths for ONEORIGIN -->
+                <g id="oneoriginPaths">
+                  <!-- 1. O (x: 10..135) -->
+                  <path d="M 38 25 H 107 Q 135 25 135 53 V 97 Q 135 125 107 125 H 38 Q 10 125 10 97 V 53 Q 10 25 38 25 Z
+                           M 44 45 Q 32 45 32 57 V 93 Q 32 105 44 105 H 101 Q 113 105 113 93 V 57 Q 113 45 101 45 Z" fill-rule="evenodd" />
+
+                  <!-- 2. N (x: 158..282) -->
+                  <path d="M 158 25 H 184 L 260 96 V 25 H 282 V 125 H 256 L 180 54 V 125 H 158 Z" />
+
+                  <!-- 3. E (x: 306..424) -->
+                  <path d="M 306 25 H 424 V 45 H 328 V 65 H 414 V 85 H 328 V 105 H 424 V 125 H 306 Z" />
+
+                  <!-- 4. O (x: 446..571) -->
+                  <path d="M 474 25 H 543 Q 571 25 571 53 V 97 Q 571 125 543 125 H 474 Q 446 125 446 97 V 53 Q 446 25 474 25 Z
+                           M 480 45 Q 468 45 468 57 V 93 Q 468 105 480 105 H 537 Q 549 105 549 93 V 57 Q 549 45 537 45 Z" fill-rule="evenodd" />
+
+                  <!-- 5. R (x: 594..718) -->
+                  <path d="M 594 25 H 690 Q 718 25 718 51 V 63 Q 718 85 693 88 L 718 125 H 692 L 669 90 H 616 V 125 H 594 Z
+                           M 616 45 V 70 H 684 Q 696 70 696 57.5 Q 696 45 684 45 Z" fill-rule="evenodd" />
+
+                  <!-- 6. I (x: 742..766) -->
+                  <path d="M 742 25 H 766 V 125 H 742 Z" />
+
+                  <!-- 7. G (x: 790..916) -->
+                  <path d="M 818 25 H 914 V 45 H 824 Q 812 45 812 57 V 93 Q 812 105 824 105 H 894 V 83 H 852 V 64 H 916 V 125 H 818 Q 790 125 790 97 V 53 Q 790 25 818 25 Z" />
+
+                  <!-- 8. I (x: 940..964) -->
+                  <path d="M 940 25 H 964 V 125 H 940 Z" />
+
+                  <!-- 9. N (x: 988..1112) -->
+                  <path d="M 988 25 H 1014 L 1090 96 V 25 H 1112 V 125 H 1086 L 1010 54 V 125 H 988 Z" />
+                </g>
+              </defs>
+
+              <!-- Layer 1: Deep Blue Ambient Back-Glow -->
+              <use href="#oneoriginPaths" fill="none" stroke="#0055ff" stroke-width="9" stroke-linejoin="round" filter="url(#neonGlow)" opacity="0.85" />
+
+              <!-- Layer 2: Crisp Dark Interior Fill + Bright Neon Stroke -->
+              <use href="#oneoriginPaths" fill="url(#innerDarkGrad)" stroke="url(#strokeGrad)" stroke-width="3.6" stroke-linejoin="round" />
+
+              <!-- Layer 3: Inner Razor-Sharp Highlight Rim -->
+              <use href="#oneoriginPaths" fill="none" stroke="#b3e6ff" stroke-width="1.1" stroke-linejoin="round" opacity="0.8" />
+
+              <!-- Layer 4: Signature Corner Star Flares (Matching Reference Image) -->
+              <!-- Top-left of First O -->
+              <use href="#cornerFlare" x="15" y="31" class="star-flare" />
+              <!-- Top-right of R / I region -->
+              <use href="#cornerFlare" x="744" y="27" class="star-flare delay-1" transform="scale(0.85)" />
+              <!-- Top-right of Last N -->
+              <use href="#cornerFlare" x="1108" y="27" class="star-flare delay-2" transform="scale(0.8)" />
+              <!-- Bottom-right of Last N -->
+              <use href="#cornerFlare" x="1108" y="122" class="star-flare delay-3" transform="scale(0.95)" />
+            </svg><text x="75" y="345" fill="#b8c8e0" font-family="Arial, sans-serif" font-size="32">Where Intelligence Begins</text></svg>
