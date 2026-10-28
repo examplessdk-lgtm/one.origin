@@ -88,3 +88,88 @@ html { scroll-behavior: smooth; }
 ::-webkit-scrollbar { width: 8px; }
 ::-webkit-scrollbar-track { background: hsl(var(--background)); }
 ::-webkit-scrollbar-thumb { background: hsl(var(--border)); border-radius: 4px; }
+
+/* Workspace controls follow the published Base44 page's visual scale.
+   Scoped so marketing layouts and recent button-radius edits stay intact. */
+.origin-workspace {
+  color-scheme: dark;
+  --workspace-surface: #0a0a0a;
+  --workspace-field: #050505;
+}
+.origin-workspace .origin-workspace__card {
+  background: var(--workspace-surface);
+  border: 1px solid hsl(var(--border) / 0.4);
+}
+.origin-workspace .origin-workspace__control,
+.origin-workspace .origin-workspace__phase {
+  box-sizing: border-box;
+  height: 3rem;
+  min-height: 3rem;
+  max-width: 100%;
+  border-radius: calc(var(--radius) - 2px);
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  font-weight: 500;
+  line-height: 1.25rem;
+}
+.origin-workspace .origin-workspace__button {
+  height: auto;
+  min-height: 3rem;
+  padding: 0.75rem 1.5rem;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  background: hsl(var(--foreground));
+  color: hsl(var(--background));
+}
+.origin-workspace .origin-workspace__button:hover {
+  background: hsl(var(--foreground) / 0.9);
+}
+.origin-workspace .origin-workspace__button[data-variant="outline"] {
+  border: 1px solid hsl(var(--border));
+  background: hsl(var(--background) / 0.5);
+  color: hsl(var(--foreground));
+}
+.origin-workspace .origin-workspace__button[data-variant="outline"]:hover {
+  background: hsl(var(--secondary));
+}
+.origin-workspace .origin-workspace__field {
+  padding: 0.5rem 1rem;
+  border: 1px solid hsl(var(--border) / 0.5);
+  background: var(--workspace-field);
+  color: hsl(var(--foreground));
+  font-weight: 400;
+  box-shadow: none;
+}
+.origin-workspace .origin-workspace__field:focus-visible {
+  border-color: hsl(var(--accent));
+}
+.origin-workspace .origin-workspace__phase {
+  border: 1px solid hsl(var(--border) / 0.4);
+  background: transparent;
+  color: hsl(var(--muted-foreground));
+  transition: background-color 150ms, color 150ms, border-color 150ms;
+}
+.origin-workspace .origin-workspace__phase:hover,
+.origin-workspace .origin-workspace__phase[aria-pressed="true"] {
+  background: hsl(var(--secondary));
+  color: hsl(var(--foreground));
+  border-color: hsl(var(--accent) / 0.4);
+}
+.origin-workspace .origin-workspace__phase:focus-visible,
+.origin-workspace .origin-workspace__project:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+.origin-workspace .origin-workspace__project {
+  border: 1px solid hsl(var(--border) / 0.4);
+  background: var(--workspace-surface);
+  transition: background-color 150ms, border-color 150ms;
+}
+.origin-workspace .origin-workspace__project:hover {
+  background: hsl(var(--secondary) / 0.5);
+  border-color: hsl(var(--accent) / 0.4);
+}
+@media (max-width: 767px) {
+  .origin-workspace .origin-workspace__field { font-size: 1rem; }
+  .origin-workspace .origin-workspace__button { width: 100%; }
+}
