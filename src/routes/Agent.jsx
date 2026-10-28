@@ -39,7 +39,7 @@ const modes = [
 
 function HeroSection() {
   return (
-    <section className="relative border-b border-border">
+    <section className="relative overflow-x-clip border-b border-border">
       <div className="absolute -top-20 left-1/4 w-[500px] h-[300px] bg-primary/15 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute bottom-0 right-0 w-[400px] h-[300px] bg-accent/10 rounded-full blur-[120px] pointer-events-none" />
       <div className="absolute top-16 right-[12%] w-3 h-3 rounded-full bg-accent pointer-events-none" style={{ animation: "floatA 8s ease-in-out infinite" }} />
@@ -81,17 +81,17 @@ function ChatDemo() {
 
   return (
     <section className="py-20">
-      <AnimatedElement className="max-w-5xl mx-auto px-6">
-        <div className="flex gap-2 mb-5">
+      <AnimatedElement className="w-full min-w-0 max-w-5xl mx-auto px-4 sm:px-6">
+        <div className="flex flex-wrap gap-2 mb-5">
           <button onClick={() => setSurface("browser")} className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm border transition-all ${surface === "browser" ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:text-foreground"}`}><Globe className="w-4 h-4" /> Browser</button>
           <button onClick={() => setSurface("terminal")} className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm border transition-all ${surface === "terminal" ? "bg-primary text-primary-foreground border-primary" : "border-border text-muted-foreground hover:text-foreground"}`}><Terminal className="w-4 h-4" /> Terminal</button>
         </div>
         <div className="rounded-2xl border border-border bg-card shadow-2xl shadow-primary/5 overflow-hidden">
-          <div className="flex items-center gap-2 px-4 py-3 border-b border-border bg-secondary">
+          <div className="flex min-w-0 items-center gap-2 px-4 py-3 border-b border-border bg-secondary">
             <span className="w-2.5 h-2.5 rounded-full bg-muted-foreground/40" /><span className="w-2.5 h-2.5 rounded-full bg-muted-foreground/40" /><span className="w-2.5 h-2.5 rounded-full bg-muted-foreground/40" />
-            <span className="ml-3 text-xs text-muted-foreground">{surface === "browser" ? "app.oneorigin.ai / chat" : "~/projects — oneorigin"}</span>
+            <span className="ml-3 min-w-0 break-words text-xs text-muted-foreground">{surface === "browser" ? "app.oneorigin.ai / chat" : "~/projects — oneorigin"}</span>
           </div>
-          <div className={`h-80 overflow-y-auto p-5 space-y-4 ${surface === "terminal" ? "font-mono text-sm" : "text-sm"}`}>
+          <div className={`h-80 min-w-0 overflow-y-auto [overflow-wrap:anywhere] p-4 sm:p-5 space-y-4 ${surface === "terminal" ? "font-mono text-sm" : "text-sm"}`}>
             {messages.map((m, i) => (
               <div key={i} className={`flex ${m.role === "user" && surface === "browser" ? "justify-end" : "justify-start"}`}>
                 {surface === "terminal" ? (
@@ -105,14 +105,14 @@ function ChatDemo() {
             <div ref={endRef} />
           </div>
           <form onSubmit={send} className="border-t border-border p-4 space-y-3">
-            <div className="flex gap-2">
+            <div className="flex min-w-0 flex-wrap gap-2">
               {modes.map((md) => (
                 <button type="button" key={md.key} onClick={() => setMode(md.key)} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs border transition-all ${mode === md.key ? "bg-secondary text-foreground border-accent" : "border-border text-muted-foreground hover:text-foreground"}`}><md.icon className="w-3.5 h-3.5" />{md.label}</button>
               ))}
             </div>
-            <div className="flex gap-2">
-              <Input value={input} onChange={(e) => setInput(e.target.value)} placeholder={surface === "terminal" ? "oneorigin ask ..." : "Message ONEORIGIN..."} className="bg-background border-border h-11" />
-              <Button type="submit" className="h-11 bg-primary text-primary-foreground hover:bg-primary/90"><Send className="w-4 h-4" /></Button>
+            <div className="flex min-w-0 flex-wrap gap-2">
+              <Input value={input} onChange={(e) => setInput(e.target.value)} placeholder={surface === "terminal" ? "oneorigin ask ..." : "Message ONEORIGIN..."} className="min-w-0 flex-1 bg-background border-border h-11" />
+              <Button type="submit" aria-label="Send message" className="shrink-0 h-11 bg-primary text-primary-foreground hover:bg-primary/90"><Send className="w-4 h-4" /></Button>
             </div>
           </form>
         </div>
@@ -167,7 +167,7 @@ function Personality() {
       <AnimatedElement className="relative max-w-3xl mx-auto px-6">
         <p className="text-[10px] tracking-[0.3em] font-bold text-accent mb-4">CHARACTERISTICS</p>
         <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-8">Tune the personality.</h2>
-        <div className="rounded-2xl border border-border bg-card p-8 space-y-8">
+        <div className="rounded-2xl border border-border bg-card p-4 sm:p-8 space-y-8">
           <div>
             <div className="flex justify-between text-sm mb-3"><span>Conciseness</span><span className="text-muted-foreground">{concise[0]}%</span></div>
             <Slider value={concise} onValueChange={setConcise} max={100} step={5} />
@@ -176,8 +176,8 @@ function Personality() {
             <div className="flex justify-between text-sm mb-3"><span>Warmth</span><span className="text-muted-foreground">{warm[0]}%</span></div>
             <Slider value={warm} onValueChange={setWarm} max={100} step={5} />
           </div>
-          <div className="flex items-center justify-between text-sm"><span>Use emoji</span><Switch checked={emoji} onCheckedChange={setEmoji} /></div>
-          <div className="flex items-center justify-between text-sm"><span className="flex items-center gap-2">Remember conversation context {memory && <Check className="w-3.5 h-3.5 text-accent" />}</span><Switch checked={memory} onCheckedChange={setMemory} /></div>
+          <div className="flex items-center justify-between gap-3 text-sm"><span>Use emoji</span><Switch checked={emoji} onCheckedChange={setEmoji} /></div>
+          <div className="flex items-center justify-between gap-3 text-sm"><span className="min-w-0 flex flex-wrap items-center gap-2">Remember conversation context {memory && <Check className="w-3.5 h-3.5 text-accent" />}</span><Switch checked={memory} onCheckedChange={setMemory} /></div>
         </div>
       </AnimatedElement>
     </section>
@@ -186,7 +186,7 @@ function Personality() {
 
 function Agent() {
   return (
-    <div>
+    <div className="min-w-0 max-w-full [overflow-wrap:anywhere]">
       <HeroSection />
       <ChatDemo />
       <Capabilities />
