@@ -13,7 +13,7 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Base44 App" },
+      { title: "Developer Having similar functions It's not just a command-line example" },
       { name: "description", content: "A full-stack Base44 app built with TanStack Start." },
     ],
     // No icon link: the platform adds the app's logo when serving.
