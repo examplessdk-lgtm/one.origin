@@ -1,3 +1,4 @@
+import { applicationSchema, site } from "@/lib/site-content";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
@@ -29,7 +30,7 @@ const AnimatedElement = ({ children, className = "", delay = 0 }) => {
     return () => { observer.disconnect(); clearTimeout(fallback); };
   }, [delay]);
   return (
-    <div ref={ref} className={`transition-all duration-1000 ease-out ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12"} ${className}`}>
+    <div data-home-reveal="" ref={ref} className={`transition-all duration-1000 ease-out ${isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-12"} ${className}`}>
       {children}
     </div>
   );
@@ -51,7 +52,7 @@ function HeroSection() {
       <div className="absolute bottom-[35%] right-[15%] w-1 h-1 rounded-full bg-foreground/50 pointer-events-none" style={{ animation: "floatB 6s ease-in-out 2s infinite" }} />
 
       <motion.div
-        initial={{ opacity: 0, y: 30, scale: 0.95 }}
+        initial={false}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
         className="relative z-10 w-full max-w-7xl mx-auto px-6 py-20 text-center flex flex-col items-center"
@@ -62,12 +63,12 @@ function HeroSection() {
         
         <div className="relative w-full max-w-[900px] mx-auto mb-16 px-4">
           <div className="absolute inset-0 bg-primary/20 blur-[100px] rounded-full mix-blend-screen" style={{ animation: "pulseOpacity 4s ease-in-out infinite" }} />
-          <img 
+          <h1 className="m-0"><span className="sr-only">ONEORIGIN — Developer workspace and AI agent interface</span><img 
             src={HERO_LOGO} 
-            alt="ONEORIGIN" 
+            alt="" 
             className="w-full h-auto drop-shadow-[0_0_30px_rgba(var(--primary),0.3)]" 
             style={{ animation: "floatA 8s ease-in-out infinite" }}
-          />
+          /></h1>
         </div>
 
         <p className="text-muted-foreground text-sm md:text-lg leading-relaxed max-w-2xl mx-auto font-light">
@@ -463,6 +464,7 @@ function Home() {
           50% { opacity: 0; }
         }
       `}} />
+      <noscript><style>{'[data-home-reveal] { opacity: 1 !important; transform: none !important; }'}</style></noscript>
       <HeroSection />
       <LogoStrip />
       <FeaturesSection />
@@ -475,4 +477,15 @@ function Home() {
   );
 }
 
-export const Route = createFileRoute("/")({ component: Home, ssr: false });
+export const Route = createFileRoute("/")({
+  component: Home,
+  head: () => ({
+    meta: [{ title: site.title }, { name: "description", content: site.description }],
+    links: [
+      { rel: "canonical", href: `${site.url}/` },
+      { rel: "alternate", type: "text/markdown", href: `${site.url}/index.md` },
+      { rel: "describedby", href: `${site.url}/llms.txt` },
+    ],
+    scripts: [{ type: "application/ld+json", children: JSON.stringify(applicationSchema).replace(/</g, '\\u003c') }],
+  }),
+});

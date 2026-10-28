@@ -23,3 +23,22 @@ jobs:
           VITE_BASE44_APP_ID: 6ae19df388768a7d60e9828e
           VITE_BASE44_APP_BASE_URL: https://figma-make-app-60e9828e.base44.app
           VITE_ORIGIN_ENABLED: 'false'
+
+      - name: Verify built Worker HTTP representations
+        shell: bash
+        run: |
+          npx wrangler dev --config dist/server/wrangler.json --ip 127.0.0.1 --port 8791 --local > /tmp/oneorigin-worker.log 2>&1 &
+          worker_pid=$!
+          trap 'kill "$worker_pid" 2>/dev/null || true' EXIT
+          python - <<'PYWAIT'
+          import socket, time
+          for attempt in range(60):
+              try:
+                  with socket.create_connection(('127.0.0.1', 8791), timeout=1):
+                      break
+              except OSError:
+                  time.sleep(0.5)
+          else:
+              raise SystemExit('Worker did not start; inspect /tmp/oneorigin-worker.log')
+          PYWAIT
+          python scripts/verify-agent-readiness.py http://127.0.0.1:8791

@@ -1,10 +1,11 @@
-import { ClientOnly, HeadContent, Scripts, createRootRoute } from "@tanstack/react-router";
+import { HeadContent, Scripts, createRootRoute } from "@tanstack/react-router";
 import { DefaultCatchBoundary } from "@/components/DefaultCatchBoundary";
 import { NotFound } from "@/components/NotFound";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/lib/AuthContext";
 import { Base44Scripts } from "base44:document";
 import Layout from "@/components/Layout";
+import { site } from "@/lib/site-content";
 import appCss from "@/index.css?url";
 
 export const Route = createRootRoute({
@@ -13,8 +14,8 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Developer Having similar functions It's not just a command-line example" },
-      { name: "description", content: "A full-stack Base44 app built with TanStack Start." },
+      { title: site.title },
+      { name: "description", content: site.description },
     ],
     // No icon link: the platform adds the app's logo when serving.
     links: [
@@ -34,9 +35,7 @@ export const Route = createRootRoute({
 function RootComponent() {
   return (
     <AuthProvider>
-      <ClientOnly>
-        <Layout />
-      </ClientOnly>
+      <Layout />
       <Toaster />
     </AuthProvider>
   );

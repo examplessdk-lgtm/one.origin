@@ -1,3 +1,4 @@
+import { agentContentMiddleware } from "@/lib/agent-middleware";
 import { createStart } from "@tanstack/react-start";
 import { authMiddleware, base44RequestMiddleware } from "@/lib/auth-middleware";
 import { errorCaptureFunctionMiddleware, errorCaptureRequestMiddleware } from "@/lib/error-capture";
@@ -5,6 +6,6 @@ import { errorCaptureFunctionMiddleware, errorCaptureRequestMiddleware } from "@
 // Every server function and server route gets `context.getBase44()`, acting as the visitor.
 // Error capture goes first, so it sees what the other middlewares and the handlers throw.
 export const startInstance = createStart(() => ({
-  requestMiddleware: [errorCaptureRequestMiddleware, base44RequestMiddleware],
+  requestMiddleware: [errorCaptureRequestMiddleware, base44RequestMiddleware, agentContentMiddleware],
   functionMiddleware: [errorCaptureFunctionMiddleware, authMiddleware],
 }));
