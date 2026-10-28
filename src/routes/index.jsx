@@ -39,7 +39,7 @@ const iconMap = { Diamond, ArrowUpRight, LayoutGrid, MessagesSquare, PenLine, Co
 
 function HeroSection() {
   return (
-    <section className="relative min-h-[90vh] flex flex-col items-center justify-center border-b border-border/40">
+    <section className="relative overflow-x-clip min-h-[90vh] flex flex-col items-center justify-center border-b border-border/40">
       {/* Background ambient lighting */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[500px] bg-primary/10 rounded-full blur-[160px] pointer-events-none mix-blend-screen" />
       <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-accent/5 rounded-full blur-[140px] pointer-events-none" />
@@ -96,7 +96,7 @@ function HeroSection() {
           className="mt-20 pt-8 border-t border-border/30 w-full max-w-lg flex flex-col items-center gap-6"
         >
           <p className="text-[10px] uppercase tracking-widest text-muted-foreground/60">Powered by Multimodal AI</p>
-          <div className="flex items-center justify-center gap-4 sm:gap-6">
+          <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-6">
             {[Type, ImageIcon, Mic, Video, Terminal, Globe].map((Ic, i) => (
               <div key={i} className="group relative w-10 h-10 rounded-full border border-border/50 bg-card/30 backdrop-blur-md flex items-center justify-center hover:bg-primary/10 hover:border-primary/30 transition-all duration-500 hover:-translate-y-1">
                 <div className="absolute inset-0 bg-primary/20 rounded-full blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-500" />

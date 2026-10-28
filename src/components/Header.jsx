@@ -22,9 +22,9 @@ export default function Header() {
   
   return (
     <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl text-foreground transition-all duration-300">
-      <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
         <Brand />
-        <nav className="hidden sm:flex items-center gap-8 text-xs font-medium text-muted-foreground">
+        <nav className="hidden xl:flex items-center gap-6 text-xs font-medium text-muted-foreground">
           <a href="/#features" className="hover:text-foreground hover:-translate-y-0.5 transition-all">Features</a>
           <Link to="/Agent" className="hover:text-primary hover:-translate-y-0.5 transition-all flex items-center gap-1">
             Agent
@@ -51,12 +51,12 @@ export default function Header() {
             <Github className="h-4 w-4" />
           </a>
           <Sheet>
-            <SheetTrigger asChild className="sm:hidden">
+            <SheetTrigger asChild className="xl:hidden">
               <Button variant="ghost" size="icon" className="hover:bg-secondary/50 rounded-full">
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="bg-background/95 backdrop-blur-xl text-foreground border-border/50 w-72">
+            <SheetContent side="right" className="bg-background/95 backdrop-blur-xl text-foreground border-border/50 w-72 max-w-full">
               <nav className="flex flex-col gap-6 mt-12 text-sm font-medium">
                 <Link to="/" className="hover:text-primary transition-colors">Home</Link>
                 <Link to="/Agent" className="hover:text-primary transition-colors flex items-center justify-between">
