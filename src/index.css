@@ -1,0 +1,90 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+@layer base {
+  :root {
+
+    --accent: 215.4 16.3% 46.9%;
+
+    --accent-foreground: 210 40% 98%;
+
+    --background: 0 0% 0%;
+
+    --border: 221.2 18.6% 16.9%;
+
+    --card: 228 23.8% 4.1%;
+
+    --card-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+
+    --destructive-foreground: 210 40% 98%;
+
+    --font-body: 'Inter', system-ui, sans-serif;
+
+    --font-heading: 'Inter', system-ui, sans-serif;
+
+    --foreground: 210 40% 98%;
+
+    --input: 217.2 32.6% 17.5%;
+
+    --muted: 220 31.9% 9.2%;
+
+    --muted-foreground: 210 40% 65%;
+
+    --popover: 0 0% 0%;
+
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 222.9 46.7% 97.1%;
+
+    --primary-foreground: 220 31.9% 9.2%;
+
+    --radius: 0.38rem;
+
+    --ring: 215.4 16.3% 46.9%;
+
+    --secondary: 220 31.9% 9.2%;
+
+    --secondary-foreground: 222.9 46.7% 97.1%;
+
+  }
+}
+
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+
+body { font-family: var(--font-body) !important; }
+h1, h2, h3, h4, h5, h6 { font-family: var(--font-heading) !important; }
+
+
+
+html { scroll-behavior: smooth; }
+@keyframes floatA { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-20px) rotate(3deg); } }
+@keyframes floatB { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-15px) rotate(-2deg); } }
+@keyframes floatC { 0%, 100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-25px) rotate(2deg); } }
+@keyframes gradient-x { 0%,100% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } }
+.animate-gradient-x { animation: gradient-x 6s ease infinite; background-size: 200% auto; }
+@keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+@keyframes glowPulse { 0%,100% { filter: brightness(1); } 50% { filter: brightness(1.25) drop-shadow(0 0 30px hsl(var(--accent) / 0.4)); } }
+@keyframes blink { 0% { opacity: 1; } 50% { opacity: 0; } }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: hsl(var(--background)); }
+::-webkit-scrollbar-thumb { background: hsl(var(--border)); border-radius: 4px; }

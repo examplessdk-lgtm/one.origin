@@ -1,0 +1,638 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Trusted 1origin public Nuxt preview pilot. Separate production storage and build role.",
+  "Parameters": {
+    "ApiId": {
+      "Type": "String",
+      "Default": "7a158myew1",
+      "AllowedPattern": "[a-z0-9]+"
+    },
+    "AuthorizerId": {
+      "Type": "String",
+      "Default": "degdgd",
+      "AllowedPattern": "[a-z0-9]+"
+    },
+    "BrokerFunction": {
+      "Type": "String",
+      "Default": "origin-github-import-Function-ZMTn9XFLErld",
+      "AllowedPattern": "[A-Za-z0-9_-]+"
+    }
+  },
+  "Resources": {
+    "Bucket": {
+      "Type": "AWS::S3::Bucket",
+      "DeletionPolicy": "Retain",
+      "UpdateReplacePolicy": "Retain",
+      "Properties": {
+        "PublicAccessBlockConfiguration": {
+          "BlockPublicAcls": true,
+          "IgnorePublicAcls": true,
+          "BlockPublicPolicy": true,
+          "RestrictPublicBuckets": true
+        },
+        "BucketEncryption": {
+          "ServerSideEncryptionConfiguration": [
+            {
+              "ServerSideEncryptionByDefault": {
+                "SSEAlgorithm": "AES256"
+              }
+            }
+          ]
+        },
+        "OwnershipControls": {
+          "Rules": [
+            {
+              "ObjectOwnership": "BucketOwnerEnforced"
+            }
+          ]
+        },
+        "LifecycleConfiguration": {
+          "Rules": [
+            {
+              "Id": "ExpirePreviews",
+              "Status": "Enabled",
+              "Prefix": "previews/",
+              "ExpirationInDays": 7,
+              "AbortIncompleteMultipartUpload": {
+                "DaysAfterInitiation": 1
+              }
+            }
+          ]
+        }
+      }
+    },
+    "OAC": {
+      "Type": "AWS::CloudFront::OriginAccessControl",
+      "Properties": {
+        "OriginAccessControlConfig": {
+          "Name": {
+            "Fn::Sub": "${AWS::StackName}-preview"
+          },
+          "OriginAccessControlOriginType": "s3",
+          "SigningBehavior": "always",
+          "SigningProtocol": "sigv4"
+        }
+      }
+    },
+    "PrettyUrls": {
+      "Type": "AWS::CloudFront::Function",
+      "Properties": {
+        "Name": {
+          "Fn::Sub": "${AWS::StackName}-paths"
+        },
+        "AutoPublish": true,
+        "FunctionConfig": {
+          "Comment": "Preview directory indexes",
+          "Runtime": "cloudfront-js-2.0"
+        },
+        "FunctionCode": "function handler(event) { var r = event.request; if (r.uri.endsWith('/')) r.uri += 'index.html'; else if (!r.uri.split('/').pop().includes('.')) r.uri += '/index.html'; return r; }"
+      }
+    },
+    "Headers": {
+      "Type": "AWS::CloudFront::ResponseHeadersPolicy",
+      "Properties": {
+        "ResponseHeadersPolicyConfig": {
+          "Name": {
+            "Fn::Sub": "${AWS::StackName}-headers"
+          },
+          "CustomHeadersConfig": {
+            "Items": [
+              {
+                "Header": "X-Robots-Tag",
+                "Value": "noindex, nofollow",
+                "Override": true
+              }
+            ]
+          },
+          "SecurityHeadersConfig": {
+            "ContentTypeOptions": {
+              "Override": true
+            },
+            "FrameOptions": {
+              "FrameOption": "DENY",
+              "Override": true
+            },
+            "ReferrerPolicy": {
+              "ReferrerPolicy": "no-referrer",
+              "Override": true
+            }
+          }
+        }
+      }
+    },
+    "Distribution": {
+      "Type": "AWS::CloudFront::Distribution",
+      "Properties": {
+        "DistributionConfig": {
+          "Enabled": true,
+          "HttpVersion": "http2and3",
+          "PriceClass": "PriceClass_100",
+          "Origins": [
+            {
+              "Id": "preview",
+              "DomainName": {
+                "Fn::GetAtt": [
+                  "Bucket",
+                  "RegionalDomainName"
+                ]
+              },
+              "OriginAccessControlId": {
+                "Ref": "OAC"
+              },
+              "S3OriginConfig": {
+                "OriginAccessIdentity": ""
+              }
+            }
+          ],
+          "DefaultCacheBehavior": {
+            "TargetOriginId": "preview",
+            "ViewerProtocolPolicy": "redirect-to-https",
+            "AllowedMethods": [
+              "GET",
+              "HEAD"
+            ],
+            "CachedMethods": [
+              "GET",
+              "HEAD"
+            ],
+            "Compress": true,
+            "CachePolicyId": "658327ea-f89d-4fab-a63d-7e88639e58f6",
+            "ResponseHeadersPolicyId": {
+              "Ref": "Headers"
+            },
+            "FunctionAssociations": [
+              {
+                "EventType": "viewer-request",
+                "FunctionARN": {
+                  "Fn::GetAtt": [
+                    "PrettyUrls",
+                    "FunctionARN"
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    "BucketPolicy": {
+      "Type": "AWS::S3::BucketPolicy",
+      "Properties": {
+        "Bucket": {
+          "Ref": "Bucket"
+        },
+        "PolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "cloudfront.amazonaws.com"
+              },
+              "Action": "s3:GetObject",
+              "Resource": {
+                "Fn::Sub": "${Bucket.Arn}/previews/*"
+              },
+              "Condition": {
+                "StringEquals": {
+                  "AWS:SourceArn": {
+                    "Fn::Sub": "arn:${AWS::Partition}:cloudfront::${AWS::AccountId}:distribution/${Distribution}"
+                  }
+                }
+              }
+            },
+            {
+              "Effect": "Deny",
+              "Principal": "*",
+              "Action": "s3:*",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "Bucket",
+                    "Arn"
+                  ]
+                },
+                {
+                  "Fn::Sub": "${Bucket.Arn}/*"
+                }
+              ],
+              "Condition": {
+                "Bool": {
+                  "aws:SecureTransport": "false"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "LogKey": {
+      "Type": "AWS::KMS::Key",
+      "Properties": {
+        "EnableKeyRotation": true,
+        "KeyPolicy": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": {
+                  "Fn::Sub": "arn:${AWS::Partition}:iam::${AWS::AccountId}:root"
+                }
+              },
+              "Action": "kms:*",
+              "Resource": "*"
+            },
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": {
+                  "Fn::Sub": "logs.${AWS::Region}.amazonaws.com"
+                }
+              },
+              "Action": [
+                "kms:Encrypt",
+                "kms:Decrypt",
+                "kms:ReEncrypt*",
+                "kms:GenerateDataKey*",
+                "kms:DescribeKey"
+              ],
+              "Resource": "*",
+              "Condition": {
+                "ArnLike": {
+                  "kms:EncryptionContext:aws:logs:arn": {
+                    "Fn::Sub": "arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/origin/${AWS::StackName}/*"
+                  }
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    "BuildLogs": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": {
+          "Fn::Sub": "/origin/${AWS::StackName}/build"
+        },
+        "RetentionInDays": 7,
+        "KmsKeyId": {
+          "Fn::GetAtt": [
+            "LogKey",
+            "Arn"
+          ]
+        }
+      }
+    },
+    "ApiLogs": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": {
+          "Fn::Sub": "/origin/${AWS::StackName}/api"
+        },
+        "RetentionInDays": 7,
+        "KmsKeyId": {
+          "Fn::GetAtt": [
+            "LogKey",
+            "Arn"
+          ]
+        }
+      }
+    },
+    "BuildRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "codebuild.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": "ScopedPreviewAccess",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:CreateLogStream",
+                    "logs:PutLogEvents"
+                  ],
+                  "Resource": {
+                    "Fn::GetAtt": [
+                      "BuildLogs",
+                      "Arn"
+                    ]
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "s3:GetBucketAcl",
+                    "s3:GetBucketLocation"
+                  ],
+                  "Resource": {
+                    "Fn::GetAtt": [
+                      "Bucket",
+                      "Arn"
+                    ]
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "s3:PutObject"
+                  ],
+                  "Resource": {
+                    "Fn::Sub": "${Bucket.Arn}/previews/*"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "Project": {
+      "Type": "AWS::CodeBuild::Project",
+      "Properties": {
+        "ServiceRole": {
+          "Fn::GetAtt": [
+            "BuildRole",
+            "Arn"
+          ]
+        },
+        "Source": {
+          "Type": "NO_SOURCE",
+          "BuildSpec": "{\"version\": \"0.2\", \"phases\": {\"install\": {\"runtime-versions\": {\"nodejs\": 22}, \"commands\": [\"set -eu\", \"node -e 'if(!/^[a-f0-9]{40}$/.test(process.env.COMMIT_SHA||\\\"\\\") || !/^[a-f0-9-]{36}$/.test(process.env.PREVIEW_ID||\\\"\\\")) process.exit(1)'\", \"git init source\", \"git -C source remote add origin https://github.com/examplessdk-lgtm/1origin.git\", \"git -C source fetch --depth=1 origin \\\"$COMMIT_SHA\\\"\", \"git -C source checkout --detach FETCH_HEAD\", \"test \\\"$(git -C source rev-parse HEAD)\\\" = \\\"$COMMIT_SHA\\\"\", \"cd source/ui/nuxt\", \"npm ci --no-audit --no-fund\"]}, \"build\": {\"commands\": [\"NUXT_APP_BASE_URL=\\\"/previews/$PREVIEW_ID/\\\" npm run generate\", \"test -s .output/public/index.html\"]}, \"post_build\": {\"commands\": [\"test \\\"$CODEBUILD_BUILD_SUCCEEDING\\\" = \\\"1\\\"\"]}}, \"artifacts\": {\"base-directory\": \"source/ui/nuxt/.output/public\", \"files\": [\"**/*\"], \"discard-paths\": \"no\"}}"
+        },
+        "Artifacts": {
+          "Type": "S3",
+          "Location": {
+            "Ref": "Bucket"
+          },
+          "Path": "previews",
+          "Name": "unassigned",
+          "NamespaceType": "NONE",
+          "Packaging": "NONE",
+          "EncryptionDisabled": true
+        },
+        "Environment": {
+          "Type": "LINUX_CONTAINER",
+          "ComputeType": "BUILD_GENERAL1_SMALL",
+          "Image": "aws/codebuild/standard:7.0",
+          "PrivilegedMode": false
+        },
+        "ConcurrentBuildLimit": 1,
+        "TimeoutInMinutes": 15,
+        "QueuedTimeoutInMinutes": 5,
+        "LogsConfig": {
+          "CloudWatchLogs": {
+            "Status": "ENABLED",
+            "GroupName": {
+              "Ref": "BuildLogs"
+            }
+          }
+        }
+      }
+    },
+    "ApiRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": "ScopedPreviewAccess",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "lambda:InvokeFunction"
+                  ],
+                  "Resource": {
+                    "Fn::Sub": "arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:${BrokerFunction}"
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "codebuild:StartBuild",
+                    "codebuild:BatchGetBuilds",
+                    "codebuild:ListBuildsForProject"
+                  ],
+                  "Resource": {
+                    "Fn::GetAtt": [
+                      "Project",
+                      "Arn"
+                    ]
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:GetLogEvents"
+                  ],
+                  "Resource": {
+                    "Fn::GetAtt": [
+                      "BuildLogs",
+                      "Arn"
+                    ]
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:CreateLogStream",
+                    "logs:PutLogEvents"
+                  ],
+                  "Resource": {
+                    "Fn::GetAtt": [
+                      "ApiLogs",
+                      "Arn"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "Function": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Runtime": "nodejs22.x",
+        "Handler": "index.handler",
+        "MemorySize": 256,
+        "Timeout": 45,
+        "Role": {
+          "Fn::GetAtt": [
+            "ApiRole",
+            "Arn"
+          ]
+        },
+        "LoggingConfig": {
+          "LogGroup": {
+            "Ref": "ApiLogs"
+          }
+        },
+        "Environment": {
+          "Variables": {
+            "PROJECT": {
+              "Ref": "Project"
+            },
+            "BROKER": {
+              "Ref": "BrokerFunction"
+            },
+            "BUCKET": {
+              "Ref": "Bucket"
+            },
+            "PREVIEW_DOMAIN": {
+              "Fn::GetAtt": [
+                "Distribution",
+                "DomainName"
+              ]
+            }
+          }
+        },
+        "Code": {
+          "ZipFile": "/* eslint-disable @typescript-eslint/no-require-imports -- AWS Lambda CommonJS runtime. */\n// Single trusted operator workspace. Public allowlisted source only; no arbitrary build commands.\nconst { createHash } = require('node:crypto');\nconst UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/;\nconst SHA = /^[a-f0-9]{40}$/;\nconst REPOSITORY = 'examplessdk-lgtm/1origin';\nconst hash = value => createHash('sha256').update(value).digest('hex');\nclass Problem extends Error {\n  constructor(status, message) { super(message); this.status = status; }\n}\nfunction reply(statusCode, value) {\n  return {statusCode, headers:{'Content-Type':'application/json','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'},body:JSON.stringify(value)};\n}\nfunction variables(build) {\n  return Object.fromEntries((build.environment?.environmentVariables || []).map(v => [v.name,v.value]));\n}\nfunction createHandler({ aws, project, broker, bucket, domain }) {\n  return async event => {\n    try {\n      const claims = event.requestContext?.authorizer?.jwt?.claims || {};\n      if (!claims.sub || claims.token_use !== 'access') throw new Problem(401,'Sign in to create a preview.');\n      const groups = Array.isArray(claims['cognito:groups']) ? claims['cognito:groups'] : String(claims['cognito:groups'] || '').match(/[\\w-]+/g) || [];\n      if (!groups.includes('origin-operators')) throw new Problem(403,'Operator membership required.');\n      const owner = hash(claims.sub);\n      const path = event.rawPath, method = event.requestContext?.http?.method;\n      function present(build) {\n        const env = variables(build);\n        const ready = build.buildStatus === 'SUCCEEDED' && UUID.test(env.PREVIEW_ID || '');\n        return {id:build.id.split(':').pop(),status:build.buildStatus,commit:env.COMMIT_SHA,\n          repository:REPOSITORY,branch:env.SOURCE_BRANCH,createdAt:build.startTime,\n          phases:(build.phases || []).map(p=>({name:p.phaseType,status:p.phaseStatus || (p.phaseType === 'COMPLETED' ? build.buildStatus : 'IN_PROGRESS')})),\n          url:ready ? `https://${domain}/previews/${env.PREVIEW_ID}/` : null};\n      }\n      async function ownedBuild(id) {\n        if (!UUID.test(id || '')) throw new Problem(400,'Invalid build identifier.');\n        const result = await aws('codebuild','BatchGetBuilds',{ids:[project+':'+id]});\n        const build = result.builds?.[0];\n        if (!build || variables(build).OWNER_HASH !== owner) throw new Problem(404,'Build not found.');\n        return build;\n      }\n      if (path === '/previews' && method === 'POST') {\n        if (event.isBase64Encoded || Buffer.byteLength(event.body || '') > 2048) throw new Problem(400,'Invalid preview request.');\n        let body;\n        try { body = JSON.parse(event.body || '{}'); } catch { throw new Problem(400,'Invalid JSON.'); }\n        if (!body || typeof body !== 'object' || Array.isArray(body)) throw new Problem(400,'Invalid preview request.');\n        if (!UUID.test(body.requestId || '') || (body.repository && body.repository !== REPOSITORY)) throw new Problem(400,'Only the connected 1origin project is supported.');\n        const branch = body.branch || 'main';\n        if (typeof branch !== 'string' || !/^[A-Za-z0-9_./-]{1,128}$/.test(branch) || branch.includes('..') || branch.startsWith('/')) throw new Problem(400,'Invalid branch.');\n        // Resolve through the existing App broker. Credentials never enter CodeBuild.\n        const resolved = await aws('lambda','Invoke',{FunctionName:broker,Payload:Buffer.from(JSON.stringify({\n          rawPath:'/github/import',queryStringParameters:{repository:REPOSITORY,ref:branch},\n          requestContext:{http:{method:'GET'},authorizer:{jwt:{claims}}}\n        }))});\n        if (resolved.FunctionError) throw new Problem(503,'Repository connection unavailable.');\n        const response = JSON.parse(Buffer.from(resolved.Payload).toString('utf8'));\n        if (response.statusCode !== 200) throw new Problem(422,'Cannot resolve this branch through the connected GitHub App.');\n        const source = JSON.parse(response.body).repository;\n        if (source?.fullName !== REPOSITORY || !SHA.test(source.commitSha || '') || source.private !== false) throw new Problem(422,'Preview currently supports only the connected public repository.');\n        const env = {COMMIT_SHA:source.commitSha,SOURCE_BRANCH:branch,OWNER_HASH:owner,PREVIEW_ID:body.requestId};\n        const started = await aws('codebuild','StartBuild',{\n          projectName:project,idempotencyToken:hash(owner+':'+body.requestId),\n          environmentVariablesOverride:Object.entries(env).map(([name,value])=>({name,value,type:'PLAINTEXT'})),\n          artifactsOverride:{type:'S3',location:bucket,path:'previews',name:body.requestId,namespaceType:'NONE',packaging:'NONE',overrideArtifactName:false,encryptionDisabled:true}\n        });\n        return reply(202,{build:present(started.build)});\n      }\n      if (path === '/previews' && method === 'GET') {\n        const listed = await aws('codebuild','ListBuildsForProject',{projectName:project,sortOrder:'DESCENDING'});\n        const ids = (listed.ids || []).slice(0,50);\n        const builds = ids.length ? (await aws('codebuild','BatchGetBuilds',{ids})).builds || [] : [];\n        return reply(200,{builds:builds.filter(b=>variables(b).OWNER_HASH===owner).map(present),limitedTo:50});\n      }\n      if (path === '/previews/logs' && method === 'GET') {\n        const build = await ownedBuild(event.queryStringParameters?.id);\n        const group = build.logs?.groupName, stream = build.logs?.streamName;\n        if (!group || !stream) return reply(200,{events:[]});\n        const logs = await aws('logs','GetLogEvents',{logGroupName:group,logStreamName:stream,startFromHead:false,limit:200});\n        const events = (logs.events || []).map(e=>({timestamp:e.timestamp,message:e.message\n          .replace(/(?:gh[pousr]_[A-Za-z0-9_]+|github_pat_[A-Za-z0-9_]+|AKIA[A-Z0-9]{16})/g,'[REDACTED]')\n          .replace(/Bearer\\s+[^\\s]+/gi,'Bearer [REDACTED]')}));\n        return reply(200,{events});\n      }\n      throw new Problem(404,'Route not found.');\n    } catch (error) {\n      if (error instanceof Problem) return reply(error.status,{error:error.message});\n      // Do not log provider responses, source contents, credentials, or request bodies.\n      return reply(503,{error:'Preview service unavailable. Refresh history before submitting another build.'});\n    }\n  };\n}\nlet runtime;\nexports.handler = async event => {\n  if (!runtime) {\n    const cb = require('@aws-sdk/client-codebuild');\n    const lf = require('@aws-sdk/client-lambda');\n    const cw = require('@aws-sdk/client-cloudwatch-logs');\n    const clients = {codebuild:new cb.CodeBuildClient({maxAttempts:1}),lambda:new lf.LambdaClient({maxAttempts:1}),logs:new cw.CloudWatchLogsClient({maxAttempts:1})};\n    const commands = {...cb,...lf,...cw};\n    runtime = createHandler({project:process.env.PROJECT,broker:process.env.BROKER,bucket:process.env.BUCKET,domain:process.env.PREVIEW_DOMAIN,\n      aws:(service,operation,input)=>clients[service].send(new commands[operation+'Command'](input))});\n  }\n  return runtime(event);\n};\nexports.createHandler = createHandler;\n"
+        }
+      }
+    },
+    "Integration": {
+      "Type": "AWS::ApiGatewayV2::Integration",
+      "Properties": {
+        "ApiId": {
+          "Ref": "ApiId"
+        },
+        "IntegrationType": "AWS_PROXY",
+        "IntegrationUri": {
+          "Fn::GetAtt": [
+            "Function",
+            "Arn"
+          ]
+        },
+        "PayloadFormatVersion": "2.0",
+        "TimeoutInMillis": 29000
+      }
+    },
+    "Permission": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Ref": "Function"
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Sub": "arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiId}/*/*/previews*"
+        }
+      }
+    },
+    "StartRoute": {
+      "Type": "AWS::ApiGatewayV2::Route",
+      "Properties": {
+        "ApiId": {
+          "Ref": "ApiId"
+        },
+        "RouteKey": "POST /previews",
+        "AuthorizationType": "JWT",
+        "AuthorizerId": {
+          "Ref": "AuthorizerId"
+        },
+        "AuthorizationScopes": [
+          "openid"
+        ],
+        "Target": {
+          "Fn::Sub": "integrations/${Integration}"
+        }
+      }
+    },
+    "HistoryRoute": {
+      "Type": "AWS::ApiGatewayV2::Route",
+      "Properties": {
+        "ApiId": {
+          "Ref": "ApiId"
+        },
+        "RouteKey": "GET /previews",
+        "AuthorizationType": "JWT",
+        "AuthorizerId": {
+          "Ref": "AuthorizerId"
+        },
+        "AuthorizationScopes": [
+          "openid"
+        ],
+        "Target": {
+          "Fn::Sub": "integrations/${Integration}"
+        }
+      }
+    },
+    "LogsRoute": {
+      "Type": "AWS::ApiGatewayV2::Route",
+      "Properties": {
+        "ApiId": {
+          "Ref": "ApiId"
+        },
+        "RouteKey": "GET /previews/logs",
+        "AuthorizationType": "JWT",
+        "AuthorizerId": {
+          "Ref": "AuthorizerId"
+        },
+        "AuthorizationScopes": [
+          "openid"
+        ],
+        "Target": {
+          "Fn::Sub": "integrations/${Integration}"
+        }
+      }
+    }
+  },
+  "Outputs": {
+    "PreviewDomain": {
+      "Value": {
+        "Fn::GetAtt": [
+          "Distribution",
+          "DomainName"
+        ]
+      }
+    },
+    "FunctionName": {
+      "Value": {
+        "Ref": "Function"
+      }
+    },
+    "ProjectName": {
+      "Value": {
+        "Ref": "Project"
+      }
+    },
+    "PreviewBucket": {
+      "Value": {
+        "Ref": "Bucket"
+      }
+    }
+  }
+}

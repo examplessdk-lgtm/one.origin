@@ -1,0 +1,666 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Origin control plane foundation; does not execute or host customer builds.",
+  "Parameters": {
+    "WebOrigin": {
+      "Type": "String",
+      "Default": "https://1origin.dev",
+      "AllowedPattern": "https://[A-Za-z0-9.-]+(?::[0-9]+)?"
+    },
+    "CognitoDomainPrefix": {
+      "Type": "String",
+      "MinLength": 3,
+      "MaxLength": 63,
+      "AllowedPattern": "[a-z0-9-]+"
+    }
+  },
+  "Resources": {
+    "Data": {
+      "Type": "AWS::DynamoDB::Table",
+      "DeletionPolicy": "Retain",
+      "UpdateReplacePolicy": "Retain",
+      "Properties": {
+        "BillingMode": "PAY_PER_REQUEST",
+        "AttributeDefinitions": [
+          {
+            "AttributeName": "pk",
+            "AttributeType": "S"
+          },
+          {
+            "AttributeName": "sk",
+            "AttributeType": "S"
+          }
+        ],
+        "KeySchema": [
+          {
+            "AttributeName": "pk",
+            "KeyType": "HASH"
+          },
+          {
+            "AttributeName": "sk",
+            "KeyType": "RANGE"
+          }
+        ],
+        "SSESpecification": {
+          "SSEEnabled": true
+        },
+        "PointInTimeRecoverySpecification": {
+          "PointInTimeRecoveryEnabled": true
+        },
+        "StreamSpecification": {
+          "StreamViewType": "NEW_IMAGE"
+        }
+      }
+    },
+    "DeadLetters": {
+      "Type": "AWS::SQS::Queue",
+      "Properties": {
+        "SqsManagedSseEnabled": true,
+        "MessageRetentionPeriod": 1209600
+      }
+    },
+    "BuildQueue": {
+      "Type": "AWS::SQS::Queue",
+      "Properties": {
+        "SqsManagedSseEnabled": true,
+        "MessageRetentionPeriod": 1209600,
+        "VisibilityTimeout": 180,
+        "RedrivePolicy": {
+          "deadLetterTargetArn": {
+            "Fn::GetAtt": [
+              "DeadLetters",
+              "Arn"
+            ]
+          },
+          "maxReceiveCount": 5
+        }
+      }
+    },
+    "StreamFailures": {
+      "Type": "AWS::SQS::Queue",
+      "Properties": {
+        "SqsManagedSseEnabled": true,
+        "MessageRetentionPeriod": 1209600
+      }
+    },
+    "ApiLogs": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "RetentionInDays": 30
+      }
+    },
+    "DispatchLogs": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "RetentionInDays": 30
+      }
+    },
+    "ApiRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": "OriginScopedAccess",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:CreateLogStream",
+                    "logs:PutLogEvents"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::GetAtt": [
+                        "ApiLogs",
+                        "Arn"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "dynamodb:GetItem",
+                    "dynamodb:PutItem",
+                    "dynamodb:Query"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::GetAtt": [
+                        "Data",
+                        "Arn"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "DispatchRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": "OriginScopedAccess",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:CreateLogStream",
+                    "logs:PutLogEvents"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::GetAtt": [
+                        "DispatchLogs",
+                        "Arn"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "dynamodb:DescribeStream",
+                    "dynamodb:GetRecords",
+                    "dynamodb:GetShardIterator"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::GetAtt": [
+                        "Data",
+                        "StreamArn"
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "dynamodb:ListStreams"
+                  ],
+                  "Resource": [
+                    "*"
+                  ]
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "sqs:SendMessage"
+                  ],
+                  "Resource": [
+                    {
+                      "Fn::GetAtt": [
+                        "BuildQueue",
+                        "Arn"
+                      ]
+                    },
+                    {
+                      "Fn::GetAtt": [
+                        "StreamFailures",
+                        "Arn"
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "ApiFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Runtime": "python3.12",
+        "Handler": "index.handler",
+        "Role": {
+          "Fn::GetAtt": [
+            "ApiRole",
+            "Arn"
+          ]
+        },
+        "Timeout": 20,
+        "MemorySize": 256,
+        "Code": {
+          "ZipFile": "\"\"\"Origin control plane. API Gateway validates Cognito access tokens before invocation.\"\"\"\nimport base64\nimport json\nimport os\nimport re\nimport uuid\nfrom datetime import datetime, timezone\n\nimport boto3\nfrom boto3.dynamodb.conditions import Key\nfrom botocore.exceptions import ClientError\n\nTABLE = boto3.resource('dynamodb').Table(os.environ['TABLE_NAME'])\nDB = boto3.client('dynamodb')\nREPO = re.compile(r'^[A-Za-z0-9_.-]{1,100}/[A-Za-z0-9_.-]{1,100}$')\nIDENTIFIER = re.compile(r'^[0-9a-f]{32}$')\n\nclass Problem(Exception):\n    def __init__(self, status, message):\n        self.status, self.message = status, message\n\n\ndef response(status, data):\n    return {'statusCode': status, 'headers': {'Content-Type': 'application/json', 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff'}, 'body': json.dumps(data)}\n\n\ndef body(event):\n    raw = event.get('body') or '{}'\n    try:\n        if event.get('isBase64Encoded'):\n            raw = base64.b64decode(raw, validate=True).decode('utf-8')\n        if len(raw.encode('utf-8')) > 8192:\n            raise Problem(413, 'Request body is too large')\n        value = json.loads(raw)\n    except (ValueError, UnicodeError):\n        raise Problem(400, 'Invalid JSON body')\n    if not isinstance(value, dict):\n        raise Problem(400, 'Expected a JSON object')\n    return value\n\n\ndef owner(event):\n    claims = event.get('requestContext', {}).get('authorizer', {}).get('jwt', {}).get('claims', {})\n    subject = claims.get('sub')\n    if not subject or claims.get('token_use') != 'access':\n        raise Problem(401, 'Sign in with an access token')\n    return 'USER#' + subject\n\n\ndef items(pk, prefix, cursor=None):\n    params = {'KeyConditionExpression': Key('pk').eq(pk) & Key('sk').begins_with(prefix), 'Limit': 50}\n    if cursor:\n        try:\n            key = json.loads(base64.urlsafe_b64decode(cursor).decode())\n            if not isinstance(key, dict) or key.get('pk') != pk or not isinstance(key.get('sk'), str) or not key['sk'].startswith(prefix):\n                raise ValueError()\n            params['ExclusiveStartKey'] = key\n        except (ValueError, KeyError, TypeError, UnicodeError):\n            raise Problem(400, 'Invalid cursor')\n    result = TABLE.query(**params)\n    data = [{k: v for k, v in item.items() if k not in ('pk', 'sk')} for item in result.get('Items', [])]\n    last = result.get('LastEvaluatedKey')\n    return {'items': data, 'cursor': base64.urlsafe_b64encode(json.dumps(last).encode()).decode() if last else None}\n\n\ndef get_project(pk, project_id):\n    if not IDENTIFIER.fullmatch(project_id):\n        raise Problem(404, 'Project not found')\n    value = TABLE.get_item(Key={'pk': pk, 'sk': 'PROJECT#' + project_id}, ConsistentRead=True).get('Item')\n    if not value:\n        raise Problem(404, 'Project not found')\n    return value\n\n\ndef handler(event, context):\n    try:\n        path = event.get('rawPath', '')\n        method = event.get('requestContext', {}).get('http', {}).get('method', '')\n        if path == '/health' and method == 'GET':\n            return response(200, {'service': 'origin-control-plane', 'buildWorkerEnabled': os.environ.get('BUILDS_ENABLED') == 'true'})\n        pk = owner(event)\n        query = event.get('queryStringParameters') or {}\n        if path == '/projects' and method == 'GET':\n            return response(200, items(pk, 'PROJECT#', query.get('cursor')))\n        if path == '/projects' and method == 'POST':\n            data = body(event)\n            repo = data.get('repository', '')\n            name = data.get('name', '')\n            branch = data.get('branch', 'main')\n            if not isinstance(repo, str) or not REPO.fullmatch(repo) or any(x in ('.', '..') for x in repo.split('/')):\n                raise Problem(400, 'Repository must be owner/repository')\n            if not isinstance(name, str) or not 1 <= len(name.strip()) <= 80:\n                raise Problem(400, 'Name must contain 1\u201380 characters')\n            if not isinstance(branch, str) or not re.fullmatch(r'[A-Za-z0-9_./-]{1,128}', branch) or '..' in branch:\n                raise Problem(400, 'Invalid branch')\n            project_id = uuid.uuid4().hex\n            item = {'pk': pk, 'sk': 'PROJECT#' + project_id, 'id': project_id, 'name': name.strip(), 'repository': repo, 'branch': branch, 'createdAt': datetime.now(timezone.utc).isoformat(), 'connectionStatus': 'not_connected'}\n            TABLE.put_item(Item=item, ConditionExpression='attribute_not_exists(pk)')\n            return response(201, {k: v for k, v in item.items() if k not in ('pk', 'sk')})\n        match = re.fullmatch(r'/projects/([^/]+)/deployments', path)\n        if match:\n            project = get_project(pk, match[1])\n            if method == 'GET':\n                return response(200, items(pk, 'DEPLOY#' + project['id'] + '#', query.get('cursor')))\n            if method == 'POST':\n                # Fail closed until a real build worker and source connection are configured.\n                if os.environ.get('BUILDS_ENABLED') != 'true':\n                    raise Problem(503, 'Build worker is not configured; no deployment was queued')\n                if project.get('connectionStatus') != 'connected':\n                    raise Problem(409, 'Connect and verify the repository first')\n                deployment_id = uuid.uuid4().hex\n                stamp = datetime.now(timezone.utc).isoformat()\n                sk = 'DEPLOY#' + project['id'] + '#' + deployment_id\n                deployment = {'pk': {'S': pk}, 'sk': {'S': sk}, 'id': {'S': deployment_id}, 'projectId': {'S': project['id']}, 'status': {'S': 'queued'}, 'createdAt': {'S': stamp}}\n                outbox = {'pk': {'S': pk}, 'sk': {'S': 'OUTBOX#' + deployment_id}, 'deploymentId': {'S': deployment_id}, 'projectId': {'S': project['id']}, 'createdAt': {'S': stamp}}\n                DB.transact_write_items(TransactItems=[{'Put': {'TableName': TABLE.name, 'Item': item, 'ConditionExpression': 'attribute_not_exists(pk)'}} for item in (deployment, outbox)])\n                return response(202, {'id': deployment_id, 'projectId': project['id'], 'status': 'queued'})\n        raise Problem(404, 'Route not found')\n    except Problem as exc:\n        return response(exc.status, {'error': exc.message})\n    except ClientError:\n        # Do not return AWS error bodies, account ids, request payloads, or credentials.\n        return response(503, {'error': 'Storage temporarily unavailable'})\n"
+        },
+        "LoggingConfig": {
+          "LogGroup": {
+            "Ref": "ApiLogs"
+          }
+        },
+        "Environment": {
+          "Variables": {
+            "TABLE_NAME": {
+              "Ref": "Data"
+            },
+            "BUILDS_ENABLED": "false"
+          }
+        }
+      }
+    },
+    "DispatchFunction": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Runtime": "python3.12",
+        "Handler": "index.handler",
+        "Role": {
+          "Fn::GetAtt": [
+            "DispatchRole",
+            "Arn"
+          ]
+        },
+        "Timeout": 20,
+        "MemorySize": 256,
+        "Code": {
+          "ZipFile": "\"\"\"Durable outbox \u2192 SQS. Delivery is at least once; consumers must deduplicate deploymentId.\"\"\"\nimport json\nimport os\nimport boto3\n\nSQS = boto3.client('sqs')\n\n\ndef handler(event, context):\n    failures = []\n    for record in event.get('Records', []):\n        if record.get('eventName') != 'INSERT':\n            continue\n        data = record['dynamodb'].get('NewImage', {})\n        if not data.get('sk', {}).get('S', '').startswith('OUTBOX#'):\n            continue\n        try:\n            payload = {key: data[key]['S'] for key in ('pk', 'deploymentId', 'projectId')}\n            SQS.send_message(QueueUrl=os.environ['QUEUE_URL'], MessageBody=json.dumps(payload))\n        except Exception:\n            failures.append({'itemIdentifier': record['dynamodb']['SequenceNumber']})\n    return {'batchItemFailures': failures}\n"
+        },
+        "LoggingConfig": {
+          "LogGroup": {
+            "Ref": "DispatchLogs"
+          }
+        },
+        "Environment": {
+          "Variables": {
+            "QUEUE_URL": {
+              "Ref": "BuildQueue"
+            }
+          }
+        }
+      }
+    },
+    "OutboxStream": {
+      "Type": "AWS::Lambda::EventSourceMapping",
+      "Properties": {
+        "EventSourceArn": {
+          "Fn::GetAtt": [
+            "Data",
+            "StreamArn"
+          ]
+        },
+        "FunctionName": {
+          "Ref": "DispatchFunction"
+        },
+        "StartingPosition": "TRIM_HORIZON",
+        "BatchSize": 10,
+        "MaximumRetryAttempts": 10,
+        "BisectBatchOnFunctionError": true,
+        "FunctionResponseTypes": [
+          "ReportBatchItemFailures"
+        ],
+        "DestinationConfig": {
+          "OnFailure": {
+            "Destination": {
+              "Fn::GetAtt": [
+                "StreamFailures",
+                "Arn"
+              ]
+            }
+          }
+        },
+        "FilterCriteria": {
+          "Filters": [
+            {
+              "Pattern": "{\"eventName\": [\"INSERT\"], \"dynamodb\": {\"NewImage\": {\"sk\": {\"S\": [{\"prefix\": \"OUTBOX#\"}]}}}}"
+            }
+          ]
+        }
+      }
+    },
+    "Users": {
+      "Type": "AWS::Cognito::UserPool",
+      "Properties": {
+        "AdminCreateUserConfig": {
+          "AllowAdminCreateUserOnly": true
+        },
+        "UsernameAttributes": [
+          "email"
+        ],
+        "AutoVerifiedAttributes": [
+          "email"
+        ],
+        "Policies": {
+          "PasswordPolicy": {
+            "MinimumLength": 12,
+            "RequireLowercase": true,
+            "RequireUppercase": true,
+            "RequireNumbers": true,
+            "RequireSymbols": true
+          }
+        },
+        "UserPoolAddOns": {
+          "AdvancedSecurityMode": "OFF"
+        }
+      }
+    },
+    "UserClient": {
+      "Type": "AWS::Cognito::UserPoolClient",
+      "Properties": {
+        "UserPoolId": {
+          "Ref": "Users"
+        },
+        "GenerateSecret": false,
+        "AllowedOAuthFlowsUserPoolClient": true,
+        "AllowedOAuthFlows": [
+          "code"
+        ],
+        "AllowedOAuthScopes": [
+          "openid",
+          "email"
+        ],
+        "SupportedIdentityProviders": [
+          "COGNITO"
+        ],
+        "CallbackURLs": [
+          {
+            "Fn::Sub": "${WebOrigin}/connect"
+          }
+        ],
+        "LogoutURLs": [
+          {
+            "Fn::Sub": "${WebOrigin}/connect"
+          }
+        ],
+        "EnableTokenRevocation": true,
+        "PreventUserExistenceErrors": "ENABLED",
+        "AccessTokenValidity": 15,
+        "IdTokenValidity": 15,
+        "RefreshTokenValidity": 1,
+        "TokenValidityUnits": {
+          "AccessToken": "minutes",
+          "IdToken": "minutes",
+          "RefreshToken": "days"
+        }
+      }
+    },
+    "UserDomain": {
+      "Type": "AWS::Cognito::UserPoolDomain",
+      "Properties": {
+        "Domain": {
+          "Ref": "CognitoDomainPrefix"
+        },
+        "UserPoolId": {
+          "Ref": "Users"
+        }
+      }
+    },
+    "Api": {
+      "Type": "AWS::ApiGatewayV2::Api",
+      "Properties": {
+        "ProtocolType": "HTTP",
+        "CorsConfiguration": {
+          "AllowOrigins": [
+            {
+              "Ref": "WebOrigin"
+            }
+          ],
+          "AllowMethods": [
+            "GET",
+            "POST"
+          ],
+          "AllowHeaders": [
+            "Authorization",
+            "Content-Type"
+          ],
+          "MaxAge": 600
+        }
+      }
+    },
+    "Stage": {
+      "Type": "AWS::ApiGatewayV2::Stage",
+      "Properties": {
+        "ApiId": {
+          "Ref": "Api"
+        },
+        "StageName": "$default",
+        "AutoDeploy": true,
+        "DefaultRouteSettings": {
+          "ThrottlingBurstLimit": 10,
+          "ThrottlingRateLimit": 5
+        }
+      }
+    },
+    "Integration": {
+      "Type": "AWS::ApiGatewayV2::Integration",
+      "Properties": {
+        "ApiId": {
+          "Ref": "Api"
+        },
+        "IntegrationType": "AWS_PROXY",
+        "IntegrationUri": {
+          "Fn::GetAtt": [
+            "ApiFunction",
+            "Arn"
+          ]
+        },
+        "PayloadFormatVersion": "2.0"
+      }
+    },
+    "Authorizer": {
+      "Type": "AWS::ApiGatewayV2::Authorizer",
+      "Properties": {
+        "ApiId": {
+          "Ref": "Api"
+        },
+        "Name": "CognitoAccessToken",
+        "AuthorizerType": "JWT",
+        "IdentitySource": [
+          "$request.header.Authorization"
+        ],
+        "JwtConfiguration": {
+          "Audience": [
+            {
+              "Ref": "UserClient"
+            }
+          ],
+          "Issuer": {
+            "Fn::Sub": "https://cognito-idp.${AWS::Region}.amazonaws.com/${Users}"
+          }
+        }
+      }
+    },
+    "ProjectsGet": {
+      "Type": "AWS::ApiGatewayV2::Route",
+      "Properties": {
+        "ApiId": {
+          "Ref": "Api"
+        },
+        "RouteKey": "GET /projects",
+        "Target": {
+          "Fn::Join": [
+            "/",
+            [
+              "integrations",
+              {
+                "Ref": "Integration"
+              }
+            ]
+          ]
+        },
+        "AuthorizationType": "JWT",
+        "AuthorizerId": {
+          "Ref": "Authorizer"
+        },
+        "AuthorizationScopes": [
+          "openid"
+        ]
+      }
+    },
+    "ProjectsPost": {
+      "Type": "AWS::ApiGatewayV2::Route",
+      "Properties": {
+        "ApiId": {
+          "Ref": "Api"
+        },
+        "RouteKey": "POST /projects",
+        "Target": {
+          "Fn::Join": [
+            "/",
+            [
+              "integrations",
+              {
+                "Ref": "Integration"
+              }
+            ]
+          ]
+        },
+        "AuthorizationType": "JWT",
+        "AuthorizerId": {
+          "Ref": "Authorizer"
+        },
+        "AuthorizationScopes": [
+          "openid"
+        ]
+      }
+    },
+    "DeploymentsGet": {
+      "Type": "AWS::ApiGatewayV2::Route",
+      "Properties": {
+        "ApiId": {
+          "Ref": "Api"
+        },
+        "RouteKey": "GET /projects/{id}/deployments",
+        "Target": {
+          "Fn::Join": [
+            "/",
+            [
+              "integrations",
+              {
+                "Ref": "Integration"
+              }
+            ]
+          ]
+        },
+        "AuthorizationType": "JWT",
+        "AuthorizerId": {
+          "Ref": "Authorizer"
+        },
+        "AuthorizationScopes": [
+          "openid"
+        ]
+      }
+    },
+    "DeploymentsPost": {
+      "Type": "AWS::ApiGatewayV2::Route",
+      "Properties": {
+        "ApiId": {
+          "Ref": "Api"
+        },
+        "RouteKey": "POST /projects/{id}/deployments",
+        "Target": {
+          "Fn::Join": [
+            "/",
+            [
+              "integrations",
+              {
+                "Ref": "Integration"
+              }
+            ]
+          ]
+        },
+        "AuthorizationType": "JWT",
+        "AuthorizerId": {
+          "Ref": "Authorizer"
+        },
+        "AuthorizationScopes": [
+          "openid"
+        ]
+      }
+    },
+    "Health": {
+      "Type": "AWS::ApiGatewayV2::Route",
+      "Properties": {
+        "ApiId": {
+          "Ref": "Api"
+        },
+        "RouteKey": "GET /health",
+        "Target": {
+          "Fn::Join": [
+            "/",
+            [
+              "integrations",
+              {
+                "Ref": "Integration"
+              }
+            ]
+          ]
+        }
+      }
+    },
+    "InvokePermission": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Ref": "ApiFunction"
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Sub": "arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${Api}/*"
+        }
+      }
+    }
+  },
+  "Outputs": {
+    "ApiUrl": {
+      "Value": {
+        "Fn::GetAtt": [
+          "Api",
+          "ApiEndpoint"
+        ]
+      }
+    },
+    "UserPoolId": {
+      "Value": {
+        "Ref": "Users"
+      }
+    },
+    "ClientId": {
+      "Value": {
+        "Ref": "UserClient"
+      }
+    },
+    "LoginDomain": {
+      "Value": {
+        "Fn::Sub": "https://${CognitoDomainPrefix}.auth.${AWS::Region}.amazoncognito.com"
+      }
+    },
+    "BuildQueueUrl": {
+      "Value": {
+        "Ref": "BuildQueue"
+      }
+    }
+  }
+}

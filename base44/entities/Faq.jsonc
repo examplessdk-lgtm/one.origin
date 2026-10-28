@@ -1,0 +1,13 @@
+{
+  "type": "object",
+  "properties": {
+    "question": {
+      "type": "string"
+    },
+    "answer": {
+      "type": "string"
+    }
+  },
+  "required": [],
+  "name": "Faq"
+}

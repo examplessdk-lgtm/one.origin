@@ -1,0 +1,15 @@
+[
+  {"slug":"chat","name":"Chat","framework":"Nuxt","category":"AI & Chat","description":"AI conversation UI, persistent history and message display","upstream":"https://github.com/nuxt-ui-templates/chat","preview":"https://chat-template.nuxt.dev"},
+  {"slug":"dashboard","name":"Dashboard","framework":"Nuxt","category":"Workspace","description":"Admin dashboard with charts, filters and panels","upstream":"https://github.com/nuxt-ui-templates/dashboard","preview":"https://dashboard-template.nuxt.dev"},
+  {"slug":"saas","name":"SaaS","framework":"Nuxt","category":"Product","description":"SaaS landing, pricing, authentication and docs","upstream":"https://github.com/nuxt-ui-templates/saas","preview":"https://saas-template.nuxt.dev"},
+  {"slug":"landing","name":"Landing","framework":"Nuxt","category":"Marketing","description":"Responsive landing page and product sections","upstream":"https://github.com/nuxt-ui-templates/landing","preview":"https://landing-template.nuxt.dev"},
+  {"slug":"docs","name":"Docs","framework":"Nuxt","category":"Content","description":"Documentation navigation, search and content","upstream":"https://github.com/nuxt-ui-templates/docs","preview":"https://docs-template.nuxt.dev"},
+  {"slug":"portfolio","name":"Portfolio","framework":"Nuxt","category":"Content","description":"Personal portfolio, projects and writing","upstream":"https://github.com/nuxt-ui-templates/portfolio","preview":"https://portfolio-template.nuxt.dev"},
+  {"slug":"editor","name":"Editor","framework":"Nuxt","category":"Editor","description":"Rich-text editor, formatting and extensions","upstream":"https://github.com/nuxt-ui-templates/editor","preview":"https://editor-template.nuxt.dev"},
+  {"slug":"calendar","name":"Calendar","framework":"Nuxt","category":"Productivity","description":"Calendar with day, week and month views","upstream":"https://github.com/nuxt-ui-templates/calendar","preview":"https://calendar-template.nuxt.dev"},
+  {"slug":"changelog","name":"Changelog","framework":"Nuxt","category":"Content","description":"Release notes and change history","upstream":"https://github.com/nuxt-ui-templates/changelog","preview":"https://changelog-template.nuxt.dev"},
+  {"slug":"starter","name":"Starter","framework":"Nuxt","category":"Starter","description":"Minimal Nuxt UI starting project","upstream":"https://github.com/nuxt-ui-templates/starter","preview":"https://starter-template.nuxt.dev"},
+  {"slug":"chat-vue","name":"Chat","framework":"Vue","category":"AI & Chat","description":"AI chat UI for Vue and Vite","upstream":"https://github.com/nuxt-ui-templates/chat-vue","preview":"https://chat-vue-template.nuxt.dev"},
+  {"slug":"dashboard-vue","name":"Dashboard","framework":"Vue","category":"Workspace","description":"Dashboard UI for Vue and Vite","upstream":"https://github.com/nuxt-ui-templates/dashboard-vue","preview":"https://vue-dashboard-template.nuxt.dev"},
+  {"slug":"starter-vue","name":"Starter","framework":"Vue","category":"Starter","description":"Minimal Vue and Vite starting project","upstream":"https://github.com/nuxt-ui-templates/starter-vue","preview":"https://starter-vue-template.nuxt.dev"}
+]

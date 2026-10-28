@@ -1,0 +1,131 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Manual CodeBuild for public Nuxt UI. Builds exact public GitHub branch and publishes static output to private S3.",
+  "Resources": {
+    "BuildLogs": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": "/aws/codebuild/origin-public-ui-build-20261024",
+        "RetentionInDays": 7
+      }
+    },
+    "BuildRole": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "codebuild.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": "ScopedBuildOperations",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:CreateLogStream",
+                    "logs:PutLogEvents"
+                  ],
+                  "Resource": {
+                    "Fn::Join": [
+                      "",
+                      [
+                        {
+                          "Fn::GetAtt": [
+                            "BuildLogs",
+                            "Arn"
+                          ]
+                        },
+                        ":*"
+                      ]
+                    ]
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "s3:ListBucket"
+                  ],
+                  "Resource": "arn:aws:s3:::origin-public-ui-20261024-staticbucket-cegkn49rtyzn"
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "s3:GetObject",
+                    "s3:PutObject",
+                    "s3:DeleteObject"
+                  ],
+                  "Resource": "arn:aws:s3:::origin-public-ui-20261024-staticbucket-cegkn49rtyzn/*"
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "cloudfront:CreateInvalidation"
+                  ],
+                  "Resource": "arn:aws:cloudfront::973750561506:distribution/E1KJQQ9NYCQT2Y"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "BuildProject": {
+      "Type": "AWS::CodeBuild::Project",
+      "Properties": {
+        "Name": "origin-public-ui-build-20261024",
+        "ServiceRole": {
+          "Fn::GetAtt": [
+            "BuildRole",
+            "Arn"
+          ]
+        },
+        "Source": {
+          "Type": "NO_SOURCE",
+          "BuildSpec": "{\"version\":0.2,\"phases\":{\"install\":{\"runtime-versions\":{\"nodejs\":22},\"commands\":[\"git clone --single-branch --branch fix/cognito-callback-hydration https://github.com/examplessdk-lgtm/1origin.git \\\"$CODEBUILD_SRC_DIR/origin-src\\\"\",\"git -C \\\"$CODEBUILD_SRC_DIR/origin-src\\\" checkout --detach 16bbf41683bbc2f6313a6ee75aee7fc342662560\",\"test \\\"$(git -C \\\"$CODEBUILD_SRC_DIR/origin-src\\\" rev-parse HEAD)\\\" = \\\"16bbf41683bbc2f6313a6ee75aee7fc342662560\\\"\",\"cd \\\"$CODEBUILD_SRC_DIR/origin-src/ui/nuxt\\\" && npm ci --no-audit --no-fund\"]},\"build\":{\"commands\":[\"cd \\\"$CODEBUILD_SRC_DIR/origin-src\\\" && node --experimental-strip-types --test backend/*.test.cjs ui/nuxt/test/*.test.mjs\",\"cd \\\"$CODEBUILD_SRC_DIR/origin-src/ui/nuxt\\\" && npm run typecheck\",\"cd \\\"$CODEBUILD_SRC_DIR/origin-src/ui/nuxt\\\" && npm run generate\",\"test -f \\\"$CODEBUILD_SRC_DIR/origin-src/ui/nuxt/.output/public/import/index.html\\\"\",\"test -f \\\"$CODEBUILD_SRC_DIR/origin-src/ui/nuxt/.output/public/auth/callback/index.html\\\"\",\"grep -Rl 'Use connected GitHub App' \\\"$CODEBUILD_SRC_DIR/origin-src/ui/nuxt/.output/public\\\" --include=\\\"*.html\\\" >/dev/null\",\"test -s \\\"$CODEBUILD_SRC_DIR/origin-src/ui/nuxt/.output/public/preview/index.html\\\"\"]},\"post_build\":{\"commands\":[\"test \\\"$CODEBUILD_BUILD_SUCCEEDING\\\" = \\\"1\\\"\",\"test -f \\\"$CODEBUILD_SRC_DIR/origin-src/ui/nuxt/.output/public/import/index.html\\\"\",\"aws s3 sync \\\"s3://$FRONTEND_BUCKET\\\" \\\"s3://$FRONTEND_BUCKET/_origin_releases/build-$CODEBUILD_BUILD_NUMBER/\\\" --exclude \\\"_origin_releases/*\\\" --only-show-errors\",\"aws s3 sync \\\"$CODEBUILD_SRC_DIR/origin-src/ui/nuxt/.output/public\\\" \\\"s3://$FRONTEND_BUCKET\\\" --exclude \\\"*.html\\\" --only-show-errors\",\"aws s3 cp \\\"$CODEBUILD_SRC_DIR/origin-src/ui/nuxt/.output/public/\\\" \\\"s3://$FRONTEND_BUCKET/\\\" --recursive --exclude \\\"*\\\" --include \\\"*.html\\\" --cache-control \\\"no-cache\\\" --only-show-errors\",\"aws cloudfront create-invalidation --distribution-id \\\"$DISTRIBUTION_ID\\\" --paths \\\"/*\\\"\"]}}}"
+        },
+        "Artifacts": {
+          "Type": "NO_ARTIFACTS"
+        },
+        "Environment": {
+          "ComputeType": "BUILD_GENERAL1_SMALL",
+          "Image": "aws/codebuild/standard:7.0",
+          "Type": "LINUX_CONTAINER",
+          "PrivilegedMode": false,
+          "EnvironmentVariables": [
+            {
+              "Name": "FRONTEND_BUCKET",
+              "Value": "origin-public-ui-20261024-staticbucket-cegkn49rtyzn"
+            },
+            {
+              "Name": "DISTRIBUTION_ID",
+              "Value": "E1KJQQ9NYCQT2Y"
+            }
+          ]
+        },
+        "TimeoutInMinutes": 35,
+        "LogsConfig": {
+          "CloudWatchLogs": {
+            "Status": "ENABLED",
+            "GroupName": "/aws/codebuild/origin-public-ui-build-20261024"
+          }
+        }
+      }
+    }
+  },
+  "Outputs": {
+    "BuildProjectName": {
+      "Value": "origin-public-ui-build-20261024"
+    }
+  }
+}

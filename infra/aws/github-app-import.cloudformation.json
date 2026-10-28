@@ -1,0 +1,196 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "ONEORIGIN read-only GitHub App import; no build execution or credential writes",
+  "Parameters": {
+    "ApiId": {
+      "Type": "String",
+      "Default": "7a158myew1",
+      "AllowedPattern": "[a-z0-9]+"
+    },
+    "AuthorizerId": {
+      "Type": "String",
+      "Default": "degdgd",
+      "AllowedPattern": "[a-z0-9]+"
+    },
+    "GitHubSecretArn": {
+      "Type": "String",
+      "Default": "arn:aws:secretsmanager:ap-southeast-1:973750561506:secret:origin/github-app-77vYaV",
+      "AllowedPattern": "arn:aws:secretsmanager:ap-southeast-1:973750561506:secret:origin/github-app-[A-Za-z0-9]+"
+    },
+    "AllowedRepositories": {
+      "Type": "String",
+      "Default": "examplessdk-lgtm/1origin",
+      "AllowedPattern": "[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+(?:,[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)*"
+    }
+  },
+  "Resources": {
+    "Logs": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "RetentionInDays": 7
+      }
+    },
+    "Role": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": "ReadOneGitHubCredential",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "secretsmanager:GetSecretValue"
+                  ],
+                  "Resource": {
+                    "Ref": "GitHubSecretArn"
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:CreateLogStream",
+                    "logs:PutLogEvents"
+                  ],
+                  "Resource": {
+                    "Fn::GetAtt": [
+                      "Logs",
+                      "Arn"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "Function": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "Runtime": "nodejs22.x",
+        "Handler": "index.handler",
+        "Timeout": 25,
+        "MemorySize": 256,
+        "Role": {
+          "Fn::GetAtt": [
+            "Role",
+            "Arn"
+          ]
+        },
+        "LoggingConfig": {
+          "LogGroup": {
+            "Ref": "Logs"
+          }
+        },
+        "Environment": {
+          "Variables": {
+            "GITHUB_SECRET_ARN": {
+              "Ref": "GitHubSecretArn"
+            },
+            "ALLOWED_REPOSITORIES": {
+              "Ref": "AllowedRepositories"
+            }
+          }
+        },
+        "Code": {
+          "ZipFile": "/* eslint-disable @typescript-eslint/no-require-imports -- Lambda inline code uses CommonJS. */\n// Read-only, single-workspace GitHub App broker. Never return provider credentials.\nconst { sign } = require('node:crypto');\nconst { TextDecoder } = require('node:util');\nconst MAX_FILE = 262144;\nconst MAX_RESPONSE = 4 * 1024 * 1024;\nconst SHA = /^[a-f0-9]{40}$/;\nconst REPOSITORY = /^[A-Za-z0-9-]{1,39}\\/[A-Za-z0-9_.-]{1,100}$/;\nclass Problem extends Error {\n  constructor(status, message) { super(message); this.status = status; }\n}\nfunction reply(statusCode, value) {\n  return { statusCode, headers: { 'Content-Type': 'application/json',\n    'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' }, body: JSON.stringify(value) };\n}\nfunction validPath(path) {\n  if (typeof path !== 'string' || !path || path.length > 1024 || /[\\\\\\x00-\\x1f]/.test(path)) return false;\n  const parts = path.split('/');\n  if (parts.some(p => !p || p === '.' || p === '..')) return false;\n  if (parts.some(p => /^\\.env(?:\\.|$)/i.test(p) && !/^\\.env\\.(example|sample)$/i.test(p))) return false;\n  if (parts.some(p => /^(\\.git|\\.ssh|\\.aws|\\.npmrc|\\.netrc|id_rsa|id_ed25519)$/i.test(p))) return false;\n  return /\\.(vue|tsx?|jsx?|mjs|cjs|json|mdx?|css|scss|html?|txt|ya?ml|toml|xml|svg|py|sh|sql|go|rs|php|rb|graphql|gql)$/i.test(path) ||\n    /(^|\\/)(Dockerfile|Makefile|LICENSE|README|\\.gitignore|\\.dockerignore|\\.env\\.(example|sample))$/i.test(path);\n}\nfunction authorize(event) {\n  const c = event.requestContext?.authorizer?.jwt?.claims;\n  if (!c?.sub || c.token_use !== 'access') throw new Problem(401, 'Sign in with an access token.');\n  const groups = Array.isArray(c['cognito:groups']) ? c['cognito:groups'] : String(c['cognito:groups'] || '').match(/[A-Za-z0-9_-]+/g) || [];\n  if (!groups.includes('origin-operators')) throw new Problem(403, 'Operator membership required.');\n}\nasync function jsonResponse(response) {\n  if (!response.ok) {\n    const status = response.status === 404 ? 404 : [403, 429].includes(response.status) ? 429 : 502;\n    throw new Problem(status, status === 404 ? 'Repository or file unavailable.' : status === 429 ? 'GitHub access is limited; try again later.' : 'GitHub connection unavailable.');\n  }\n  if (Number(response.headers.get('content-length')) > MAX_RESPONSE) throw new Problem(413, 'GitHub response is too large.');\n  const reader = response.body.getReader();\n  const chunks = []; let length = 0;\n  try {\n    while (true) {\n      const { done, value } = await reader.read();\n      if (done) break;\n      length += value.byteLength;\n      if (length > MAX_RESPONSE) throw new Problem(413, 'GitHub response is too large.');\n      chunks.push(Buffer.from(value));\n    }\n    return JSON.parse(Buffer.concat(chunks).toString('utf8'));\n  } finally { await reader.cancel().catch(() => {}); }\n}\nfunction createHandler({ getSecret, fetcher = fetch, allowedRepositories = '' } = {}) {\n  const allowed = new Set(allowedRepositories.split(',').map(x => x.trim().toLowerCase()).filter(Boolean));\n  return async event => {\n    try {\n      authorize(event);\n      const path = event.rawPath;\n      if (event.requestContext?.http?.method !== 'GET' || !['/github/import', '/github/file'].includes(path)) throw new Problem(404, 'Route not found.');\n      if (!allowed.size) throw new Problem(503, 'GitHub repository access is not configured.');\n      const q = event.queryStringParameters || {};\n      const repository = q.repository;\n      if (typeof repository !== 'string' || !REPOSITORY.test(repository) || repository.split('/').some(p => p === '.' || p === '..')) throw new Problem(400, 'Use owner/repository.');\n      if (!allowed.has(repository.toLowerCase())) throw new Problem(403, 'Repository is not enabled for this workspace.');\n      const ref = q.ref;\n      if (ref !== undefined && (typeof ref !== 'string' || !/^[A-Za-z0-9_./-]{1,128}$/.test(ref) || ref.includes('..') || ref.startsWith('/'))) throw new Problem(400, 'Invalid branch or commit.');\n      if (path === '/github/file' && (!SHA.test(q.commit || '') || !validPath(q.path))) throw new Problem(400, 'A pinned commit and supported relative file path are required.');\n      const secret = await getSecret();\n      if (!secret?.privateKey || !secret.clientId || !/^\\d+$/.test(String(secret.installationId))) throw new Problem(503, 'GitHub credentials are not configured.');\n      const now = Math.floor(Date.now() / 1000);\n      const header = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT' })).toString('base64url');\n      const payload = Buffer.from(JSON.stringify({ iat: now - 60, exp: now + 480, iss: secret.clientId })).toString('base64url');\n      const input = `${header}.${payload}`;\n      const jwt = `${input}.${sign('RSA-SHA256', Buffer.from(input), secret.privateKey).toString('base64url')}`;\n      const request = async (route, token, body) => jsonResponse(await fetcher(`https://api.github.com${route}`, {\n        method: body ? 'POST' : 'GET', redirect: 'error', signal: AbortSignal.timeout(5000),\n        headers: { Authorization: `Bearer ${token}`, Accept: 'application/vnd.github+json',\n          'X-GitHub-Api-Version': '2022-11-28', 'User-Agent': 'ONEORIGIN-GitHub-Import',\n          ...(body ? { 'Content-Type': 'application/json' } : {}) },\n        ...(body ? { body: JSON.stringify(body) } : {}),\n      }));\n      const access = await request(`/app/installations/${secret.installationId}/access_tokens`, jwt, {\n        repositories: [repository.split('/')[1]], permissions: { contents: 'read' },\n      });\n      if (typeof access.token !== 'string' || !access.token) throw new Problem(502, 'GitHub connection unavailable.');\n      const root = '/repos/' + repository.split('/').map(encodeURIComponent).join('/');\n      if (path === '/github/file') {\n        // Contents API can dereference symlinks. Resolve through the pinned tree instead.\n        const resolved = await request(`${root}/git/commits/${q.commit}`, access.token);\n        if (!SHA.test(resolved.tree?.sha || '')) throw new Problem(502, 'GitHub commit is unavailable.');\n        const tree = await request(`${root}/git/trees/${resolved.tree.sha}?recursive=1`, access.token);\n        if (tree.truncated || !Array.isArray(tree.tree)) throw new Problem(422, 'Complete repository tree is required.');\n        const entry = tree.tree.find(f => f.path === q.path && f.type === 'blob' && ['100644', '100755'].includes(f.mode));\n        if (!entry || !SHA.test(entry.sha || '')) throw new Problem(404, 'Regular file not found at this commit.');\n        if (!Number.isSafeInteger(entry.size) || entry.size > MAX_FILE || entry.size < 0) throw new Problem(413, 'File exceeds 256 KiB.');\n        const file = await request(`${root}/git/blobs/${entry.sha}`, access.token);\n        if (file.encoding !== 'base64') throw new Problem(400, 'Only regular text files are supported.');\n        if (file.size > MAX_FILE || typeof file.content !== 'string' || file.content.length > 360000) throw new Problem(413, 'File exceeds 256 KiB.');\n        const bytes = Buffer.from(file.content, 'base64');\n        if (bytes.length > MAX_FILE) throw new Problem(413, 'File exceeds 256 KiB.');\n        let content;\n        try { content = new TextDecoder('utf-8', { fatal: true }).decode(bytes); }\n        catch { throw new Problem(400, 'Only UTF-8 text files are supported.'); }\n        if (content.includes('\\0')) throw new Problem(400, 'Binary files are not supported.');\n        return reply(200, { path: q.path, sha: file.sha, commitSha: q.commit, content });\n      }\n      const meta = await request(root, access.token);\n      if (meta.full_name?.toLowerCase() !== repository.toLowerCase()) throw new Problem(502, 'Repository identity did not match.');\n      const branch = ref || meta.default_branch;\n      if (!branch) throw new Problem(422, 'Repository has no default branch.');\n      const resolved = await request(`${root}/commits/${encodeURIComponent(branch)}`, access.token);\n      if (!SHA.test(resolved.sha || '') || !SHA.test(resolved.commit?.tree?.sha || '')) throw new Problem(502, 'GitHub did not resolve an immutable commit.');\n      const tree = await request(`${root}/git/trees/${resolved.commit.tree.sha}?recursive=1`, access.token);\n      if (tree.truncated) throw new Problem(422, 'Repository tree is too large; partial import was not accepted.');\n      if (!Array.isArray(tree.tree)) throw new Problem(502, 'GitHub tree is unavailable.');\n      const files = tree.tree.filter(f => f.type === 'blob' && ['100644', '100755'].includes(f.mode) &&\n        validPath(f.path) && SHA.test(f.sha) && Number.isSafeInteger(f.size) && f.size >= 0 && f.size <= MAX_FILE)\n        .map(({ path, sha, size }) => ({ path, sha, size })).sort((a, b) => a.path.localeCompare(b.path));\n      if (files.length > 1200) throw new Problem(422, 'Repository has more than 1200 supported files.');\n      if (!files.length) throw new Problem(422, 'No supported text files found.');\n      return reply(200, { repository: { owner: meta.full_name.split('/')[0], name: meta.full_name.split('/')[1],\n        fullName: meta.full_name, branch, commitSha: resolved.sha, private: Boolean(meta.private),\n        connection: 'github-app', url: `https://github.com/${meta.full_name}` }, files });\n    } catch (error) {\n      if (error instanceof Problem) return reply(error.status, { error: error.message });\n      // Never log SDK/provider errors: they can contain credentials or signed requests.\n      return reply(503, { error: 'GitHub import temporarily unavailable.' });\n    }\n  };\n}\nlet runtimeHandler;\nexports.handler = async event => {\n  if (!runtimeHandler) {\n    const { SecretsManagerClient, GetSecretValueCommand } = require('@aws-sdk/client-secrets-manager');\n    const client = new SecretsManagerClient({ maxAttempts: 2 });\n    runtimeHandler = createHandler({ allowedRepositories: process.env.ALLOWED_REPOSITORIES,\n      getSecret: async () => {\n        const value = await client.send(new GetSecretValueCommand({ SecretId: process.env.GITHUB_SECRET_ARN }));\n        return JSON.parse(value.SecretString);\n      } });\n  }\n  return runtimeHandler(event);\n};\nexports.createHandler = createHandler;\n"
+        }
+      }
+    },
+    "Integration": {
+      "Type": "AWS::ApiGatewayV2::Integration",
+      "Properties": {
+        "ApiId": {
+          "Ref": "ApiId"
+        },
+        "IntegrationType": "AWS_PROXY",
+        "IntegrationUri": {
+          "Fn::GetAtt": [
+            "Function",
+            "Arn"
+          ]
+        },
+        "PayloadFormatVersion": "2.0",
+        "TimeoutInMillis": 28000
+      }
+    },
+    "InvokePermission": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "Action": "lambda:InvokeFunction",
+        "FunctionName": {
+          "Ref": "Function"
+        },
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Sub": "arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiId}/*/GET/github/*"
+        }
+      }
+    },
+    "ImportRoute": {
+      "Type": "AWS::ApiGatewayV2::Route",
+      "Properties": {
+        "ApiId": {
+          "Ref": "ApiId"
+        },
+        "RouteKey": "GET /github/import",
+        "AuthorizationType": "JWT",
+        "AuthorizerId": {
+          "Ref": "AuthorizerId"
+        },
+        "AuthorizationScopes": [
+          "openid"
+        ],
+        "Target": {
+          "Fn::Sub": "integrations/${Integration}"
+        }
+      }
+    },
+    "FileRoute": {
+      "Type": "AWS::ApiGatewayV2::Route",
+      "Properties": {
+        "ApiId": {
+          "Ref": "ApiId"
+        },
+        "RouteKey": "GET /github/file",
+        "AuthorizationType": "JWT",
+        "AuthorizerId": {
+          "Ref": "AuthorizerId"
+        },
+        "AuthorizationScopes": [
+          "openid"
+        ],
+        "Target": {
+          "Fn::Sub": "integrations/${Integration}"
+        }
+      }
+    }
+  },
+  "Outputs": {
+    "FunctionName": {
+      "Value": {
+        "Ref": "Function"
+      }
+    },
+    "LogGroup": {
+      "Value": {
+        "Ref": "Logs"
+      }
+    }
+  }
+}

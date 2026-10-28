@@ -1,0 +1,29 @@
+{
+  "properties": {
+    "role": {
+      "type": "string",
+      "description": "The role of the user in the app",
+      "enum": [
+        "admin",
+        "user"
+      ]
+    },
+    "bio": {
+      "type": "string",
+      "description": "Short profile description"
+    },
+    "notify_product": {
+      "type": "boolean",
+      "description": "Receive product updates"
+    },
+    "notify_news": {
+      "type": "boolean",
+      "description": "Receive the ONEORIGIN newsletter"
+    }
+  },
+  "required": [
+    "role"
+  ],
+  "name": "User",
+  "type": "object"
+}

@@ -1,0 +1,19 @@
+{
+  "ui": {
+    "provider": "Base44",
+    "appId": "6ae19df388768a7d60e9828e",
+    "branch": "main",
+    "publishedUrl": "https://figma-make-app-60e9828e.base44.app",
+    "sourceFilesRead": 123,
+    "liveAppModified": false
+  },
+  "awsAndLegacy": {
+    "repository": "examplessdk-lgtm/1origin",
+    "commit": "15e899e445e3d18381d509aa13a5e2378b44ff15",
+    "copied": ["backend", "infra", "infrastructure", "scripts", "docs (under docs/legacy)", "ui/nuxt (under legacy/nuxt)"]
+  },
+  "target": "examplessdk-lgtm/one.origin",
+  "cloudCutoverPerformed": false,
+  "userRecordsExported": false,
+  "secretValuesExported": false
+}

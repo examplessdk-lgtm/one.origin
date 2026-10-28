@@ -1,0 +1,296 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Origin operations API: public sanitized CodeBuild status, Cognito operator-restricted fixed-project rebuild; no arbitrary repo execution.",
+  "Resources": {
+    "OperatorGroup": {
+      "Type": "AWS::Cognito::UserPoolGroup",
+      "Properties": {
+        "UserPoolId": "ap-southeast-1_KHW0AqL2a",
+        "GroupName": "origin-operators",
+        "Description": "May run fixed Origin frontend AWS CodeBuild project."
+      }
+    },
+    "WebClient": {
+      "Type": "AWS::Cognito::UserPoolClient",
+      "Properties": {
+        "UserPoolId": "ap-southeast-1_KHW0AqL2a",
+        "ClientName": "origin-nuxt-operations-web",
+        "GenerateSecret": false,
+        "AllowedOAuthFlowsUserPoolClient": true,
+        "AllowedOAuthFlows": [
+          "code"
+        ],
+        "AllowedOAuthScopes": [
+          "openid",
+          "email"
+        ],
+        "SupportedIdentityProviders": [
+          "COGNITO"
+        ],
+        "CallbackURLs": [
+          "https://d1x9cuojzyjcbw.cloudfront.net/auth/callback"
+        ],
+        "LogoutURLs": [
+          "https://d1x9cuojzyjcbw.cloudfront.net/dashboard"
+        ],
+        "PreventUserExistenceErrors": "ENABLED",
+        "EnableTokenRevocation": true,
+        "AccessTokenValidity": 15,
+        "IdTokenValidity": 15,
+        "RefreshTokenValidity": 1,
+        "TokenValidityUnits": {
+          "AccessToken": "minutes",
+          "IdToken": "minutes",
+          "RefreshToken": "days"
+        }
+      }
+    },
+    "LogGroup": {
+      "Type": "AWS::Logs::LogGroup",
+      "Properties": {
+        "LogGroupName": "/aws/lambda/origin-operations-20261024",
+        "RetentionInDays": 14
+      }
+    },
+    "Role": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        },
+        "Policies": [
+          {
+            "PolicyName": "OriginOperationsFixedProject",
+            "PolicyDocument": {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:CreateLogStream",
+                    "logs:PutLogEvents"
+                  ],
+                  "Resource": {
+                    "Fn::Sub": "arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/origin-operations-20261024:*"
+                  }
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "codebuild:ListBuildsForProject",
+                    "codebuild:BatchGetBuilds",
+                    "codebuild:StartBuild"
+                  ],
+                  "Resource": "arn:aws:codebuild:ap-southeast-1:973750561506:project/origin-public-ui-build-20261024"
+                },
+                {
+                  "Effect": "Allow",
+                  "Action": [
+                    "logs:GetLogEvents"
+                  ],
+                  "Resource": "arn:aws:logs:ap-southeast-1:973750561506:log-group:/aws/codebuild/origin-public-ui-build-20261024:log-stream:*"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "Function": {
+      "Type": "AWS::Lambda::Function",
+      "Properties": {
+        "FunctionName": "origin-operations-20261024",
+        "Runtime": "python3.12",
+        "Handler": "index.handler",
+        "Role": {
+          "Fn::GetAtt": [
+            "Role",
+            "Arn"
+          ]
+        },
+        "Timeout": 15,
+        "MemorySize": 256,
+        "Environment": {
+          "Variables": {
+            "PROJECT_NAME": "origin-public-ui-build-20261024"
+          }
+        },
+        "Code": {
+          "ZipFile": "import json\nimport os\nimport re\nfrom datetime import datetime, timezone\nimport boto3\n\nPROJECT = os.environ[\"PROJECT_NAME\"]\nOPERATOR_GROUP = \"origin-operators\"\ncodebuild = boto3.client(\"codebuild\")\n\ndef reply(status, payload):\n    return {\n        \"statusCode\": status,\n        \"headers\": {\n            \"Content-Type\": \"application/json\",\n            \"Cache-Control\": \"no-store\",\n            \"X-Content-Type-Options\": \"nosniff\"\n        },\n        \"body\": json.dumps(payload, separators=(\",\", \":\"))\n    }\n\ndef get_builds(limit=10):\n    response = codebuild.list_builds_for_project(projectName=PROJECT, sortOrder=\"DESCENDING\")\n    ids = response.get(\"ids\", [])[:limit]\n    if not ids:\n        return []\n    result = codebuild.batch_get_builds(ids=ids)\n    builds = result.get(\"builds\", [])\n    builds.sort(key=lambda item: item.get(\"startTime\", datetime.min.replace(tzinfo=timezone.utc)), reverse=True)\n    return builds\n\ndef clean(build):\n    def dt(value):\n        return value.astimezone(timezone.utc).isoformat() if value else None\n    return {\n        \"id\": build.get(\"id\", \"\").rsplit(\":\", 1)[-1],\n        \"status\": build.get(\"buildStatus\", \"UNKNOWN\"),\n        \"phase\": build.get(\"currentPhase\"),\n        \"number\": build.get(\"buildNumber\"),\n        \"startedAt\": dt(build.get(\"startTime\")),\n        \"endedAt\": dt(build.get(\"endTime\")),\n        \"phases\": [\n            {\"name\": p.get(\"phaseType\"), \"status\": p.get(\"phaseStatus\")}\n            for p in build.get(\"phases\", [])\n            if p.get(\"phaseType\") in (\"INSTALL\", \"BUILD\", \"POST_BUILD\", \"UPLOAD_ARTIFACTS\")\n        ]\n    }\n\ndef handler(event, context):\n    route = event.get(\"routeKey\", \"\")\n    try:\n        if route == \"GET /health\":\n            return reply(200, {\"ok\": True, \"service\": \"origin-operations\", \"region\": os.environ.get(\"AWS_REGION\")})\n        if route == \"GET /status\":\n            builds = get_builds(12)\n            return reply(200, {\n                \"service\": \"origin-operations\",\n                \"project\": PROJECT,\n                \"source\": \"aws-codebuild\",\n                \"fetchedAt\": datetime.now(timezone.utc).isoformat(),\n                \"builds\": [clean(b) for b in builds],\n                \"startRequiresOperator\": True\n            })\n        if route == \"GET /logs\":\n            claims = (((event.get(\"requestContext\") or {}).get(\"authorizer\") or {}).get(\"jwt\") or {}).get(\"claims\") or {}\n            groups = str(claims.get(\"cognito:groups\") or \"\")\n            if not re.search(r\"(^|[^a-z0-9_-])origin-operators([^a-z0-9_-]|$)\", groups):\n                return reply(403, {\"error\": \"Operator membership required for build logs.\"})\n            build_id = str((event.get(\"queryStringParameters\") or {}).get(\"id\") or \"\")\n            if not re.fullmatch(r\"[a-f0-9-]{36}\", build_id):\n                return reply(400, {\"error\": \"A valid build identifier is required.\"})\n            matches = codebuild.batch_get_builds(ids=[PROJECT + \":\" + build_id]).get(\"builds\", [])\n            if not matches or matches[0].get(\"projectName\") != PROJECT:\n                return reply(404, {\"error\": \"Build not found.\"})\n            log_info = matches[0].get(\"logs\") or {}\n            group_name = log_info.get(\"groupName\")\n            stream_name = log_info.get(\"streamName\")\n            if group_name != \"/aws/codebuild/origin-public-ui-build-20261024\" or not stream_name:\n                return reply(404, {\"error\": \"Build logs are not available.\"})\n            cloudwatch = boto3.client(\"logs\")\n            events = cloudwatch.get_log_events(\n                logGroupName=group_name, logStreamName=stream_name,\n                limit=120, startFromHead=False\n            ).get(\"events\", [])\n            return reply(200, {\n                \"build\": build_id,\n                \"events\": [\n                    {\"timestamp\": item.get(\"timestamp\"), \"message\": (item.get(\"message\") or \"\")[:800]}\n                    for item in events\n                ]\n            })\n        if route == \"POST /build\":\n            claims = (((event.get(\"requestContext\") or {}).get(\"authorizer\") or {}).get(\"jwt\") or {}).get(\"claims\") or {}\n            groups = str(claims.get(\"cognito:groups\") or \"\")\n            if not re.search(r\"(^|[^a-z0-9_-])origin-operators([^a-z0-9_-]|$)\", groups):\n                return reply(403, {\"error\": \"Operator membership required for starting AWS builds.\"})\n            builds = get_builds(6)\n            if builds and builds[0].get(\"buildStatus\") == \"IN_PROGRESS\":\n                return reply(409, {\"error\": \"A build is already in progress.\", \"build\": clean(builds[0])})\n            if builds and builds[0].get(\"startTime\"):\n                seconds = (datetime.now(timezone.utc) - builds[0][\"startTime\"]).total_seconds()\n                if seconds < 180:\n                    return reply(429, {\"error\": \"Build cooldown is active. Try again after 3 minutes.\"})\n            started = codebuild.start_build(projectName=PROJECT)\n            return reply(202, {\"accepted\": True, \"build\": clean(started[\"build\"])})\n        return reply(404, {\"error\": \"Unknown route.\"})\n    except Exception:\n        print(\"Origin operations request failed: route=\" + route)\n        return reply(503, {\"error\": \"AWS operations temporarily unavailable.\"})\n"
+        }
+      }
+    },
+    "Api": {
+      "Type": "AWS::ApiGatewayV2::Api",
+      "Properties": {
+        "Name": "origin-operations-20261024",
+        "ProtocolType": "HTTP",
+        "CorsConfiguration": {
+          "AllowOrigins": [
+            "https://d1x9cuojzyjcbw.cloudfront.net"
+          ],
+          "AllowHeaders": [
+            "content-type",
+            "authorization"
+          ],
+          "AllowMethods": [
+            "GET",
+            "POST",
+            "OPTIONS"
+          ],
+          "MaxAge": 3600
+        }
+      }
+    },
+    "Integration": {
+      "Type": "AWS::ApiGatewayV2::Integration",
+      "Properties": {
+        "ApiId": {
+          "Ref": "Api"
+        },
+        "IntegrationType": "AWS_PROXY",
+        "IntegrationUri": {
+          "Fn::GetAtt": [
+            "Function",
+            "Arn"
+          ]
+        },
+        "PayloadFormatVersion": "2.0"
+      }
+    },
+    "Authorizer": {
+      "Type": "AWS::ApiGatewayV2::Authorizer",
+      "Properties": {
+        "ApiId": {
+          "Ref": "Api"
+        },
+        "Name": "origin-cognito-jwt",
+        "AuthorizerType": "JWT",
+        "IdentitySource": [
+          "$request.header.Authorization"
+        ],
+        "JwtConfiguration": {
+          "Audience": [
+            {
+              "Ref": "WebClient"
+            }
+          ],
+          "Issuer": "https://cognito-idp.ap-southeast-1.amazonaws.com/ap-southeast-1_KHW0AqL2a"
+        }
+      }
+    },
+    "HealthRoute": {
+      "Type": "AWS::ApiGatewayV2::Route",
+      "Properties": {
+        "ApiId": {
+          "Ref": "Api"
+        },
+        "RouteKey": "GET /health",
+        "Target": {
+          "Fn::Sub": "integrations/${Integration}"
+        }
+      }
+    },
+    "StatusRoute": {
+      "Type": "AWS::ApiGatewayV2::Route",
+      "Properties": {
+        "ApiId": {
+          "Ref": "Api"
+        },
+        "RouteKey": "GET /status",
+        "Target": {
+          "Fn::Sub": "integrations/${Integration}"
+        }
+      }
+    },
+    "BuildRoute": {
+      "Type": "AWS::ApiGatewayV2::Route",
+      "Properties": {
+        "ApiId": {
+          "Ref": "Api"
+        },
+        "RouteKey": "POST /build",
+        "AuthorizationType": "JWT",
+        "AuthorizerId": {
+          "Ref": "Authorizer"
+        },
+        "Target": {
+          "Fn::Sub": "integrations/${Integration}"
+        }
+      }
+    },
+    "Stage": {
+      "Type": "AWS::ApiGatewayV2::Stage",
+      "Properties": {
+        "ApiId": {
+          "Ref": "Api"
+        },
+        "StageName": "$default",
+        "AutoDeploy": true,
+        "DefaultRouteSettings": {
+          "ThrottlingRateLimit": 10,
+          "ThrottlingBurstLimit": 20
+        }
+      }
+    },
+    "Permission": {
+      "Type": "AWS::Lambda::Permission",
+      "Properties": {
+        "FunctionName": {
+          "Ref": "Function"
+        },
+        "Action": "lambda:InvokeFunction",
+        "Principal": "apigateway.amazonaws.com",
+        "SourceArn": {
+          "Fn::Sub": "arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${Api}/*/*"
+        }
+      }
+    },
+    "LogsRoute": {
+      "Type": "AWS::ApiGatewayV2::Route",
+      "Properties": {
+        "ApiId": {
+          "Ref": "Api"
+        },
+        "RouteKey": "GET /logs",
+        "AuthorizationType": "JWT",
+        "AuthorizerId": {
+          "Ref": "Authorizer"
+        },
+        "Target": {
+          "Fn::Sub": "integrations/${Integration}"
+        }
+      }
+    }
+  },
+  "Outputs": {
+    "ApiUrl": {
+      "Value": {
+        "Fn::GetAtt": [
+          "Api",
+          "ApiEndpoint"
+        ]
+      }
+    },
+    "CognitoClientId": {
+      "Value": {
+        "Ref": "WebClient"
+      }
+    },
+    "CognitoDomain": {
+      "Value": "https://origin1auth20261023sdk.auth.ap-southeast-1.amazoncognito.com"
+    },
+    "ProjectName": {
+      "Value": "origin-public-ui-build-20261024"
+    }
+  }
+}

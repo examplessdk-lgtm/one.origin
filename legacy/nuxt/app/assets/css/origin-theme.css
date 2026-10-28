@@ -1,0 +1,77 @@
+/* Origin design tokens, shared by every active route.
+ * Original Nuxt UI source repositories remain preserved; do not duplicate these tokens per page.
+ * The custom-* Tailwind colors are bound to Nuxt UI semantic colors in app/app.config.ts.
+ */
+@theme {
+  --font-mono: 'Geist Mono', monospace;
+}
+@theme static {
+  --color-custom-primary-50: oklch(98.2% 0.018 155.826);
+  --color-custom-primary-100: oklch(96.7% 0.047 176.492);
+  --color-custom-primary-200: oklch(92.4% 0.091 197.805);
+  --color-custom-primary-300: oklch(86.5% 0.098 219.953);
+  --color-custom-primary-400: oklch(79.4% 0.114 242.808);
+  --color-custom-primary-500: oklch(71.6% 0.152 252.388);
+  --color-custom-primary-600: oklch(63.2% 0.161 245.505);
+  --color-custom-primary-700: oklch(54.4% 0.129 242.041);
+  --color-custom-primary-800: oklch(45.3% 0.105 240.631);
+  --color-custom-primary-900: oklch(36% 0.083 240.521);
+  --color-custom-primary-950: oklch(26.6% 0.062 241.326);
+  --color-custom-neutral-50: oklch(98.5% 0 0);
+  --color-custom-neutral-100: oklch(95.9% 0 0);
+  --color-custom-neutral-200: oklch(91.4% 0 0);
+  --color-custom-neutral-300: oklch(84.5% 0 0);
+  --color-custom-neutral-400: oklch(74.1% 0 0);
+  --color-custom-neutral-500: oklch(59.6% 0 0);
+  --color-custom-neutral-600: oklch(43.2% 0 0);
+  --color-custom-neutral-700: oklch(29.9% 0 0);
+  --color-custom-neutral-800: oklch(21.4% 0 0);
+  --color-custom-neutral-900: oklch(16.7% 0 0);
+  --color-custom-neutral-950: oklch(14.5% 0 0);
+}
+:root {
+  --ui-radius: 0.375rem;
+  --origin-brand-accent: var(--color-custom-primary-500);
+}
+:root, .light {
+  --ui-text-inverted: var(--ui-color-neutral-50);
+  --ui-bg: var(--ui-color-neutral-50);
+  --ui-bg-muted: var(--ui-color-neutral-100);
+  --ui-bg-elevated: var(--ui-color-neutral-100);
+  --ui-bg-accented: var(--ui-color-neutral-200);
+  --ui-text: var(--ui-color-neutral-900);
+  --ui-text-highlighted: var(--ui-color-neutral-950);
+  --ui-primary: var(--ui-color-primary-100);
+  --ui-secondary: black;
+}
+.dark {
+  --ui-bg-inverted: var(--ui-color-neutral-50);
+  --ui-border-inverted: var(--ui-color-neutral-50);
+  --ui-bg: var(--ui-color-neutral-950);
+  --ui-bg-muted: var(--ui-color-neutral-900);
+  --ui-bg-elevated: var(--ui-color-neutral-900);
+  --ui-bg-accented: var(--ui-color-neutral-800);
+  --ui-text: var(--ui-color-neutral-100);
+  --ui-text-highlighted: var(--ui-color-neutral-50);
+  --ui-primary: var(--ui-color-primary-800);
+  --ui-secondary: var(--ui-color-secondary-800);
+  --ui-text-inverted: var(--ui-color-neutral-900);
+}
+/* Dedicated accessible accents for the app's controls, independent of the
+ * very pale light-mode and dark dark-mode semantic UI primary selections above. */
+.origin-accent-text { color: var(--color-custom-primary-400); }
+.origin-accent-border { border-color: var(--color-custom-primary-600); }
+.origin-progress-track { background: var(--color-custom-neutral-800); overflow:hidden; border-radius: var(--ui-radius); }
+.origin-progress-fill { height:100%; min-width:0; background:var(--color-custom-primary-500); transition:width 160ms ease; }
+.origin-module-card { border: 1px solid var(--origin-line); background: var(--origin-raise); border-radius: var(--ui-radius); padding:18px; min-width:0; }
+.origin-module-card:hover { border-color: var(--color-custom-neutral-600); }
+.origin-input { width:100%; border:1px solid var(--color-custom-neutral-700); background:var(--origin-side); padding:10px 12px; color:var(--origin-ink); border-radius:var(--ui-radius); outline:none; }
+.origin-input:focus-visible { outline:2px solid var(--color-custom-primary-400); outline-offset:2px; }
+.origin-tag { display:inline-flex; padding:4px 8px; border:1px solid var(--origin-line); color:var(--origin-muted); font-size:11px; border-radius:var(--ui-radius); }
+.origin-timeline { border-left:1px solid var(--color-custom-neutral-700); margin-left:8px; padding-left:20px; }
+.origin-timeline-item { position:relative; padding-bottom:22px; }
+.origin-timeline-item::before { content:''; position:absolute; top:3px; left:-26px; height:11px; width:11px; border:2px solid var(--color-custom-primary-500); border-radius:50%; background:var(--origin-ground); }
+.origin-code { font-family:'Geist Mono',monospace; background:var(--origin-side); border:1px solid var(--origin-line); padding:10px 12px; border-radius:var(--ui-radius); overflow:auto; white-space:pre-wrap; overflow-wrap:anywhere; }
+.origin-chat-list { display:flex; flex-direction:column; gap:14px; min-height:270px; max-height:min(57vh,620px); overflow:auto; padding:16px 12px; }
+.origin-chat-message { border:1px solid var(--color-custom-neutral-700); border-radius:var(--ui-radius); padding:13px; max-width:95%; background:var(--origin-raise); white-space:pre-wrap; overflow-wrap:anywhere; }
+.origin-chat-composer { display:flex; flex-direction:column; gap:8px; padding:14px; border-top:1px solid var(--origin-line); }
