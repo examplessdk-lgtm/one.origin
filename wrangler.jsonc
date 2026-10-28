@@ -39,5 +39,19 @@
       "store_id": "b56dddabe7d74172932cf26f4a2ab03f",
       "secret_name": "Secret_store"
     }
-  ]
+  ],
+  "previews": {
+    "kv_namespaces": [
+      {
+        "binding": "KV_NAMESPACE",
+        "id": "e696e4c51c9642c78c1c394d6e6df686"
+      }
+    ],
+    "d1_databases": [
+      {
+        "binding": "database_binding",
+        "database_id": "5e9f4890-a692-430b-aded-58e0282e2ad7"
+      }
+    ]
+  }
 }
