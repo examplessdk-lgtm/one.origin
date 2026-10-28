@@ -44,7 +44,7 @@ export default function Header() {
           <a href="/#faq" className="hover:text-foreground hover:-translate-y-0.5 transition-all">FAQ</a>
         </nav>
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" aria-label="Toggle color theme" onClick={() => setDark(!dark)} className="text-muted-foreground hover:text-foreground hover:bg-secondary/50 rounded-full transition-colors">
+          <Button variant="ghost" size="icon" aria-label="Toggle color theme" onClick={() => setDark(!dark)} className="text-muted-foreground hover:text-foreground hover:bg-secondary/50 rounded-md transition-colors">
             {dark ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
           </Button>
           <a href="https://github.com/" target="_blank" rel="noopener noreferrer" aria-label="GitHub" className="p-2 text-muted-foreground hover:text-foreground hover:bg-secondary/50 rounded-full transition-all">
@@ -52,7 +52,7 @@ export default function Header() {
           </a>
           <Sheet>
             <SheetTrigger asChild className="xl:hidden">
-              <Button variant="ghost" size="icon" className="hover:bg-secondary/50 rounded-full">
+              <Button variant="ghost" size="icon" className="hover:bg-secondary/50 rounded-md">
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>

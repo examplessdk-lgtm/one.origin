@@ -78,12 +78,12 @@ function HeroSection() {
         
         <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-4 w-full sm:w-auto">
           <a href="#pricing" className="w-full sm:w-auto">
-            <Button className="w-full sm:w-auto h-12 px-8 rounded-full bg-foreground text-background hover:bg-foreground/90 hover:scale-105 active:scale-95 transition-all duration-300 shadow-[0_0_40px_-10px_rgba(255,255,255,0.3)]">
+            <Button className="w-full sm:w-auto h-12 px-8 rounded-md bg-foreground text-background hover:bg-foreground/90 hover:scale-105 active:scale-95 transition-all duration-300 shadow-[0_0_40px_-10px_rgba(255,255,255,0.3)]">
               Get started <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           </a>
           <a href="#templates" className="w-full sm:w-auto">
-            <Button variant="outline" className="w-full sm:w-auto h-12 px-8 rounded-full border-border bg-background/50 backdrop-blur-sm text-foreground hover:bg-secondary hover:text-foreground hover:scale-105 active:scale-95 transition-all duration-300">
+            <Button variant="outline" className="w-full sm:w-auto h-12 px-8 rounded-md border-border bg-background/50 backdrop-blur-sm text-foreground hover:bg-secondary hover:text-foreground hover:scale-105 active:scale-95 transition-all duration-300">
               <Diamond className="w-4 h-4 mr-2 text-muted-foreground" /> Explore templates
             </Button>
           </a>
@@ -370,9 +370,9 @@ function SignupSection() {
               placeholder="Enter your email" 
               value={email} 
               onChange={(e) => setEmail(e.target.value)} 
-              className="bg-[#0a0a0a] border-border/50 h-12 px-5 text-base sm:flex-1 rounded-full focus-visible:ring-primary/50 focus-visible:border-primary/50" 
+              className="bg-[#0a0a0a] border-border/50 h-12 px-5 text-base sm:flex-1 rounded-md focus-visible:ring-primary/50 focus-visible:border-primary/50" 
             />
-            <Button type="submit" className="h-12 px-8 rounded-full bg-foreground text-background hover:bg-foreground/90 hover:scale-105 active:scale-95 transition-all duration-300 shadow-lg">
+            <Button type="submit" className="h-12 px-8 rounded-md bg-foreground text-background hover:bg-foreground/90 hover:scale-105 active:scale-95 transition-all duration-300 shadow-lg">
               Get early access <ArrowRight className="w-4 h-4 ml-2" />
             </Button>
           </form>
