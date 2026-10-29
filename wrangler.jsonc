@@ -6,6 +6,12 @@
     "nodejs_compat"
   ],
   "main": "src/server.js",
+  "hyperdrive": [
+    {
+      "binding": "HYPERDRIVE",
+      "id": "86f27ef3032e46be8f2a3d8dd60fb9bd"
+    }
+  ],
   "d1_databases": [
     {
       "binding": "database_binding",
