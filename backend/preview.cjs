@@ -4,6 +4,8 @@ const { createHash } = require('node:crypto');
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/;
 const SHA = /^[a-f0-9]{40}$/;
 const REPOSITORY = 'examplessdk-lgtm/1origin';
+const STARTER = 'examplessdk-lgtm/OriginStarter-Template';
+const supported = repository => repository===REPOSITORY || repository===STARTER;
 const hash = value => createHash('sha256').update(value).digest('hex');
 class Problem extends Error {
   constructor(status, message) { super(message); this.status = status; }
@@ -27,7 +29,7 @@ function createHandler({ aws, project, broker, bucket, domain, table }) {
         const env = variables(build);
         const ready = build.buildStatus === 'SUCCEEDED' && UUID.test(env.PREVIEW_ID || '');
         return {id:build.id.split(':').pop(),status:build.buildStatus,commit:env.COMMIT_SHA,
-          repository:REPOSITORY,branch:env.SOURCE_BRANCH,createdAt:build.startTime,
+          repository:env.SOURCE_REPOSITORY||REPOSITORY,branch:env.SOURCE_BRANCH,createdAt:build.startTime,
           phases:(build.phases || []).map(p=>({name:p.phaseType,status:p.phaseStatus || (p.phaseType === 'COMPLETED' ? build.buildStatus : 'IN_PROGRESS')})),
           url:ready ? `https://${domain}/previews/${env.PREVIEW_ID}/` : null};
       }
@@ -63,13 +65,14 @@ function createHandler({ aws, project, broker, bucket, domain, table }) {
         if (path==='/projects' && method==='GET') return reply(200,await listRecords('PROJECT#'));
         if (path==='/projects' && method==='POST') {
           const data=readBody();
-          if (!UUID.test(data.requestId||'') || data.repository!==REPOSITORY || typeof data.name!=='string' || !data.name.trim() || data.name.length>80) throw new Problem(400,'Use a project name and the connected 1origin repository.');
+          if (!UUID.test(data.requestId||'') || !supported(data.repository) || typeof data.name!=='string' || !data.name.trim() || data.name.length>80) throw new Problem(400,'Use a project name and an enabled repository.');
           const branch=data.branch||'main';
+          if(data.repository===STARTER && branch!=='main')throw new Problem(400,'Starter template is locked to main.');
           if (typeof branch!=='string' || !/^[A-Za-z0-9_./-]{1,128}$/.test(branch) || branch.includes('..') || branch.startsWith('/')) throw new Problem(400,'Invalid branch.');
           const prior=await getRecord('PROJECT#'+data.requestId);
           if (prior) return reply(200,{project:prior});
-          const resolved=await resolveSource(branch);
-          const record={id:data.requestId,name:data.name.trim(),repository:REPOSITORY,branch,commit:resolved.commitSha,createdAt:new Date().toISOString()};
+          const resolved=await resolveSource(branch,data.repository);
+          const record={id:data.requestId,name:data.name.trim(),repository:data.repository,branch,commit:resolved.commitSha,createdAt:new Date().toISOString()};
           try { await putRecord('PROJECT#'+record.id,record,true); }
           catch(e) { if(e.name!=='ConditionalCheckFailedException')throw e; return reply(200,{project:await getRecord('PROJECT#'+record.id)}); }
           return reply(201,{project:record});
@@ -115,13 +118,14 @@ function createHandler({ aws, project, broker, bucket, domain, table }) {
           }
         }
       }
-      async function resolveSource(branch) {
-        const resolved=await aws('lambda','Invoke',{FunctionName:broker,Payload:Buffer.from(JSON.stringify({rawPath:'/github/import',queryStringParameters:{repository:REPOSITORY,ref:branch},requestContext:{http:{method:'GET'},authorizer:{jwt:{claims}}}}))});
+      async function resolveSource(branch,repository=REPOSITORY) {
+        if(!supported(repository))throw new Problem(400,'Repository is not enabled.');
+        const resolved=await aws('lambda','Invoke',{FunctionName:broker,Payload:Buffer.from(JSON.stringify({rawPath:'/github/import',queryStringParameters:{repository,ref:branch},requestContext:{http:{method:'GET'},authorizer:{jwt:{claims}}}}))});
         if(resolved.FunctionError)throw new Problem(503,'Repository connection unavailable.');
         const response=JSON.parse(Buffer.from(resolved.Payload).toString('utf8'));
         if(response.statusCode!==200)throw new Problem(422,'Cannot resolve this branch through the connected GitHub App.');
         const source=JSON.parse(response.body).repository;
-        if(source?.fullName!==REPOSITORY||!SHA.test(source.commitSha||'')||source.private!==false)throw new Problem(422,'Only the connected public repository is supported.');
+        if(source?.fullName!==repository||!SHA.test(source.commitSha||'')||source.private!==false)throw new Problem(422,'Only the connected public repository is supported.');
         return source;
       }
       if (path === '/previews' && method === 'POST') {
@@ -132,8 +136,9 @@ function createHandler({ aws, project, broker, bucket, domain, table }) {
         if (!UUID.test(body.requestId || '') || (body.repository && body.repository !== REPOSITORY)) throw new Problem(400,'Only the connected 1origin project is supported.');
         const branch = selectedProject?.branch || body.branch || 'main';
         if (typeof branch !== 'string' || !/^[A-Za-z0-9_./-]{1,128}$/.test(branch) || branch.includes('..') || branch.startsWith('/')) throw new Problem(400,'Invalid branch.');
-        const source = await resolveSource(branch);
-        const env = {COMMIT_SHA:source.commitSha,SOURCE_BRANCH:branch,OWNER_HASH:owner,PREVIEW_ID:body.requestId,...(selectedProject?{APP_PROJECT_ID:selectedProject.id}:{})};
+        const repository=selectedProject?.repository||REPOSITORY;
+        const source = await resolveSource(branch,repository);
+        const env = {SOURCE_REPOSITORY:repository,COMMIT_SHA:source.commitSha,SOURCE_BRANCH:branch,OWNER_HASH:owner,PREVIEW_ID:body.requestId,...(selectedProject?{APP_PROJECT_ID:selectedProject.id}:{})};
         const started = await aws('codebuild','StartBuild',{
           projectName:project,idempotencyToken:hash(owner+':'+(selectedProject?.id||'legacy')+':'+body.requestId),
           environmentVariablesOverride:Object.entries(env).map(([name,value])=>({name,value,type:'PLAINTEXT'})),

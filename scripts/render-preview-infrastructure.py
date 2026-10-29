@@ -15,15 +15,16 @@ buildspec = {'version':'0.2','phases':{
         "set -eu",
         "node -e 'if(!/^[a-f0-9]{40}$/.test(process.env.COMMIT_SHA||\"\") || !/^[a-f0-9-]{36}$/.test(process.env.PREVIEW_ID||\"\")) process.exit(1)'",
         'git init source',
-        'git -C source remote add origin https://github.com/examplessdk-lgtm/1origin.git',
+        'case "${SOURCE_REPOSITORY:-examplessdk-lgtm/1origin}" in examplessdk-lgtm/1origin|examplessdk-lgtm/OriginStarter-Template) ;; *) exit 1 ;; esac',
+        'git -C source remote add origin "https://github.com/${SOURCE_REPOSITORY:-examplessdk-lgtm/1origin}.git"',
         'git -C source fetch --depth=1 origin "$COMMIT_SHA"',
         'git -C source checkout --detach FETCH_HEAD',
         'test "$(git -C source rev-parse HEAD)" = "$COMMIT_SHA"',
-        'cd source/ui/nuxt',
+        'if [ "${SOURCE_REPOSITORY:-examplessdk-lgtm/1origin}" = "examplessdk-lgtm/OriginStarter-Template" ]; then cd source; else cd source/ui/nuxt; fi',
         'npm ci --no-audit --no-fund']},
-    'build':{'commands':['NUXT_APP_BASE_URL="/previews/$PREVIEW_ID/" npm run generate', 'test -s .output/public/index.html']},
+    'build':{'commands':['NUXT_APP_BASE_URL="/previews/$PREVIEW_ID/" npm run generate', 'test -s .output/public/index.html', 'mkdir -p /tmp/origin-artifacts', 'cp -R .output/public/. /tmp/origin-artifacts/']},
     'post_build':{'commands':['test "$CODEBUILD_BUILD_SUCCEEDING" = "1"']}},
-    'artifacts':{'base-directory':'source/ui/nuxt/.output/public','files':['**/*'],'discard-paths':'no'}}
+    'artifacts':{'base-directory':'/tmp/origin-artifacts','files':['**/*'],'discard-paths':'no'}}
 resources = {
     'Bucket':{'Type':'AWS::S3::Bucket','DeletionPolicy':'Retain','UpdateReplacePolicy':'Retain','Properties':{
         'PublicAccessBlockConfiguration':{k:True for k in ['BlockPublicAcls','IgnorePublicAcls','BlockPublicPolicy','RestrictPublicBuckets']},
@@ -75,4 +76,12 @@ template={'AWSTemplateFormatVersion':'2010-09-09','Description':'Trusted 1origin
     'Parameters':{'ApiId':{'Type':'String','Default':'7a158myew1','AllowedPattern':'[a-z0-9]+'},'AuthorizerId':{'Type':'String','Default':'degdgd','AllowedPattern':'[a-z0-9]+'},
         'BrokerFunction':{'Type':'String','Default':'origin-github-import-Function-ZMTn9XFLErld','AllowedPattern':'[A-Za-z0-9_-]+'}},
     'Resources':resources,'Outputs':{'PreviewDomain':{'Value':get('Distribution','DomainName')},'FunctionName':{'Value':ref('Function')},'ProjectName':{'Value':ref('Project')},'PreviewBucket':{'Value':ref('Bucket')}}}
+# Preserve the production/project extension, including IAM and storage policies.
+existing_path=ROOT/'infra/aws/origin-preview.cloudformation.json'
+if existing_path.exists():
+    existing=json.loads(existing_path.read_text())
+    if 'Projects' in existing.get('Resources',{}):
+        existing['Resources']['Function']['Properties']['Code']=resources['Function']['Properties']['Code']
+        existing['Resources']['Project']['Properties']['Source']=resources['Project']['Properties']['Source']
+        template=existing
 (ROOT/'infra/aws/origin-preview.cloudformation.json').write_text(json.dumps(template,indent=2)+'\n')

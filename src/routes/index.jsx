@@ -77,7 +77,7 @@ function HeroSection() {
         </p>
         
         <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-4 w-full sm:w-auto">
-          <a href="#pricing" className="w-full sm:w-auto">
+          <a href="/hosting?template=origin-starter" className="w-full sm:w-auto">
             <Button className="w-full sm:w-auto h-12 px-8 rounded-md bg-foreground text-background hover:bg-foreground/90 hover:scale-105 active:scale-95 transition-all duration-300 shadow-[0_0_40px_-10px_rgba(255,255,255,0.3)]">
               Get started <ArrowRight className="w-4 h-4 ml-2" />
             </Button>

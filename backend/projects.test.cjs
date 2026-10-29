@@ -17,7 +17,7 @@ function setup(){
   if(op==='GetItem')return {Item:db.get(key(i.Key))};
   if(op==='PutItem'){if(i.ConditionExpression&&db.has(key(i.Item)))throw Object.assign(Error(),{name:'ConditionalCheckFailedException'});db.set(key(i.Item),i.Item);return{};}
   if(op==='Query')return{Items:[...db.values()].filter(x=>x.pk.S===i.ExpressionAttributeValues[':pk'].S&&x.sk.S.startsWith(i.ExpressionAttributeValues[':prefix'].S))};
-  if(op==='Invoke')return{Payload:Buffer.from(JSON.stringify({statusCode:200,body:JSON.stringify({repository:{fullName:'examplessdk-lgtm/1origin',commitSha:SHA,private:false}})}))};
+  if(op==='Invoke')return{Payload:Buffer.from(JSON.stringify({statusCode:200,body:JSON.stringify({repository:{fullName:JSON.parse(i.Payload.toString()).queryStringParameters.repository,commitSha:SHA,private:false}})}))};
   if(op==='BatchGetBuilds')return{builds:[{id:'build:'+BUILD,buildStatus:status,environment:{environmentVariables:Object.entries({OWNER_HASH:buildOwner,APP_PROJECT_ID:buildProject,PREVIEW_ID:BUILD,COMMIT_SHA:SHA}).map(([name,value])=>({name,value}))}}]};
   if(op==='StartBuild')return{build:{id:'build:'+BUILD,environment:{environmentVariables:i.environmentVariablesOverride},buildStatus:'IN_PROGRESS'}};
   if(op==='ListBuildsForProject')return{ids:['build:'+BUILD]};
@@ -72,4 +72,20 @@ test('failed copies never publish a URL and return sanitized error; release stat
  const s=setup();s.set({failCopy:true});const r=await s.handler(production());assert.equal(r.statusCode,503);assert.ok(!r.body.includes('private AWS'));
  const history=JSON.parse((await s.handler(event('GET','/projects/'+PROJECT+'/production'))).body);assert.equal(history.items[0].status,'FAILED');assert.equal(history.items[0].url,undefined);
  assert.equal(JSON.parse(s.db.get(owner+'|PROJECT#'+PROJECT).data.S).production,undefined);
+});
+
+test('starter source is locked to main and follows the persisted project into the build',async()=>{
+ const s=setup(),repository='examplessdk-lgtm/OriginStarter-Template';
+ const body={requestId:RELEASE,name:'Starter',repository,branch:'feature'};
+ assert.equal((await s.handler(event('POST','/projects',body))).statusCode,400);
+ assert.ok(!s.calls.some(c=>c.op==='Invoke'));
+ body.branch='main';
+ const created=await s.handler(event('POST','/projects',body));
+ assert.equal(created.statusCode,201);assert.equal(JSON.parse(created.body).project.repository,repository);
+ const built=await s.handler(event('POST','/projects/'+RELEASE+'/previews',{requestId:BUILD,repository:'evil/repo'}));
+ assert.equal(built.statusCode,400);
+ const accepted=await s.handler(event('POST','/projects/'+RELEASE+'/previews',{requestId:BUILD}));
+ assert.equal(accepted.statusCode,202);
+ const env=Object.fromEntries(s.calls.find(c=>c.op==='StartBuild').i.environmentVariablesOverride.map(v=>[v.name,v.value]));
+ assert.equal(env.SOURCE_REPOSITORY,repository);assert.equal(env.SOURCE_BRANCH,'main');assert.equal(env.COMMIT_SHA,SHA);
 });

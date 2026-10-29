@@ -19,7 +19,7 @@
     },
     "AllowedRepositories": {
       "Type": "String",
-      "Default": "examplessdk-lgtm/1origin",
+      "Default": "examplessdk-lgtm/1origin,examplessdk-lgtm/OriginStarter-Template",
       "AllowedPattern": "[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+(?:,[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)*"
     }
   },

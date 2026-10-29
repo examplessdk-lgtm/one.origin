@@ -45,7 +45,7 @@ template = {
         'AuthorizerId': {'Type': 'String', 'Default': 'degdgd', 'AllowedPattern': '[a-z0-9]+'},
         'GitHubSecretArn': {'Type': 'String', 'Default': 'arn:aws:secretsmanager:ap-southeast-1:973750561506:secret:origin/github-app-77vYaV',
             'AllowedPattern': 'arn:aws:secretsmanager:ap-southeast-1:973750561506:secret:origin/github-app-[A-Za-z0-9]+'},
-        'AllowedRepositories': {'Type': 'String', 'Default': 'examplessdk-lgtm/1origin',
+        'AllowedRepositories': {'Type': 'String', 'Default': 'examplessdk-lgtm/1origin,examplessdk-lgtm/OriginStarter-Template',
             'AllowedPattern': '[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+(?:,[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+)*'},
     },
     'Resources': resources,
